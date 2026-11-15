@@ -43,7 +43,7 @@ export function startConnection(e, node, portEl) {
   const tempLine = document.createElementNS('http://www.w3.org/2000/svg', 'path');
   tempLine.id = 'temp-connection';
   tempLine.setAttribute('fill', 'none');
-  tempLine.setAttribute('stroke', '#3b82f6');
+  tempLine.setAttribute('stroke', '#4d9fea');
   tempLine.setAttribute('stroke-width', '2');
   tempLine.setAttribute('stroke-dasharray', '5 5');
   svg.appendChild(tempLine);

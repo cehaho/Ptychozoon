@@ -248,10 +248,10 @@
   }
 
   function minimapNodeColor(selected, state) {
-    if (selected) return '#3b82f6';
-    if (state === 'up') return '#22c55e';
-    if (state === 'down') return '#ef4444';
-    return '#94a3b8';
+    if (selected) return '#4d9fea';
+    if (state === 'up') return '#5fb85a';
+    if (state === 'down') return '#e5674f';
+    return '#8a8a8a';
   }
 
   // Minimap point for a node position. The world is 300% of the viewport.
@@ -273,7 +273,7 @@
       if (!byId.has(n.id)) byId.set(n.id, n);
     });
 
-    ctx.fillStyle = options.dark ? '#1e293b' : '#f1f5f9';
+    ctx.fillStyle = options.dark ? '#212121' : '#f5f4f2';
     ctx.fillRect(0, 0, width, height);
     ctx.lineWidth = 1;
 

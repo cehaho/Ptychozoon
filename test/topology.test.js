@@ -34,7 +34,7 @@ const legacy = {
       y: 50,
       isContainer: true,
       containerType: 'proxmox',
-      zones: [{ id: 'zone_lan', name: 'LAN', color: '#3b82f6' }],
+      zones: [{ id: 'zone_lan', name: 'LAN', color: '#4d9fea' }],
       expanded: false,
       ports: [{ id: 'node_nas_wan', name: 'WAN', side: 'top' }]
     }
@@ -65,7 +65,7 @@ test('legacy parents become stable links and leave the node', () => {
   assert.equal(nas.isContainer, true);
   assert.equal(nas.containerType, 'proxmox');
   assert.equal(nas.expanded, false);
-  assert.deepEqual(nas.zones, [{ id: 'zone_lan', name: 'LAN', color: '#3b82f6' }]);
+  assert.deepEqual(nas.zones, [{ id: 'zone_lan', name: 'LAN', color: '#4d9fea' }]);
   assert.equal(nas.ports[0].id, 'node_nas_wan');
 
   const mouse = first.document.links.find((link) => link.id === 'mouse_1');

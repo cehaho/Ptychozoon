@@ -44,13 +44,13 @@ function ensureTooltip() {
     'display:none',
     'min-width:170px',
     'padding:8px 10px',
-    'border-radius:8px',
+    'border-radius:3px',
     'font-size:11px',
     'line-height:1.5',
     'background:var(--bg-modal)',
     'color:var(--text-primary)',
     'border:1px solid var(--border-color)',
-    'box-shadow:0 6px 20px rgba(0,0,0,0.35)'
+    'box-shadow:var(--shadow-float)'
   ].join(';');
   document.body.appendChild(tooltip);
   return tooltip;
@@ -86,7 +86,7 @@ function content(id) {
       'Availability',
       `${History.formatPercent(stats.availability)} (${stats.up}/${stats.count})`
     ) +
-    `<div style="margin-top:6px;background:rgba(128,128,128,0.08);border-radius:4px;">${spark}</div>`
+    `<div style="margin-top:6px;background:var(--soft);border-radius:3px;">${spark}</div>`
   );
 }
 

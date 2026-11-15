@@ -157,10 +157,10 @@
   function loadStyle(utilization) {
     if (typeof utilization !== 'number' || !Number.isFinite(utilization)) return null;
     const share = Math.max(0, Math.min(1, utilization));
-    let color = '#22c55e';
-    if (share >= 0.85) color = '#ef4444';
-    else if (share >= 0.6) color = '#f97316';
-    else if (share >= 0.3) color = '#eab308';
+    let color = '#5fb85a';
+    if (share >= 0.85) color = '#e5674f';
+    else if (share >= 0.6) color = '#e08a3c';
+    else if (share >= 0.3) color = '#c9a227';
     return { color: color, width: 2 + Math.round(share * 6) };
   }
 

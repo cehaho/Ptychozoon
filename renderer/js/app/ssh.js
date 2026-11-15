@@ -289,10 +289,10 @@ async function initTerminal(nodeId, container) {
     fontSize: 13,
     fontFamily: 'Menlo, Monaco, "Courier New", monospace',
     theme: {
-      background: '#1a1a2e',
-      foreground: '#e2e8f0',
-      cursor: '#3b82f6',
-      selectionBackground: 'rgba(59, 130, 246, 0.3)'
+      background: '#161616',
+      foreground: '#e8e8e8',
+      cursor: '#4d9fea',
+      selectionBackground: 'rgba(77, 159, 234, 0.3)'
     }
   });
 
