@@ -1,3 +1,5 @@
+<p align="center"><img src="docs/logo.png" alt="Ptychozoon" width="160"></p>
+
 # Ptychozoon
 
 Topologie et supervision réseau. Le nom vient du gecko volant, qui plane d’arbre en arbre comme on passe d’un nœud à l’autre.
