@@ -6,6 +6,7 @@ import { displayedNodes, state } from './state.js';
 import { saveConfig } from './io.js';
 import { getWorld } from './viewport.js';
 import { CanvasSearch } from './search-ui.js';
+import { drawFlows } from './flows-ui.js';
 
 export function linkAppearance(conn, nodes) {
   const statusById = new Map((nodes || []).map((node) => [node.id, node.status]));
@@ -154,6 +155,7 @@ export function drawLines() {
       svg.appendChild(text);
     }
   });
+  drawFlows(svg);
   CanvasSearch.decorate();
 }
 

@@ -78,6 +78,10 @@
       traceroute: (host) => invoke('actions_traceroute', { host }),
       wake: (mac, broadcast) => invoke('actions_wake', { mac, broadcast })
     },
+    flows: {
+      check: (ids) => invoke('flows_check', { ids: ids || null }),
+      approve: (nodeId, command) => invoke('flows_approve', { nodeId, command })
+    },
     snmp: {
       start: (config) => invoke('snmp_start', { config }),
       stop: () => invoke('snmp_stop'),

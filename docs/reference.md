@@ -86,6 +86,19 @@ Lecture seule, SNMP v2c, activée nœud par nœud (formulaire du nœud ou tablea
 - **Affichage** : l’infobulle du nœud montre nom, description, uptime, interfaces actives et les plus chargées. Un lien est coloré et épaissi selon sa charge (vert < 30 %, jaune < 60 %, orange < 85 %, rouge au-delà, par rapport à la vitesse de l’interface) si son interface est connue : `snmpIfIndex` ou `snmpIfName` sur le lien (avec `snmpNodeId` pour l’extrémité concernée ; double-clic sur un lien pour le saisir), ou, à défaut, un nom de port du nœud égal au `ifName` ou `ifDescr`.
 - **Limites** : pas de SNMPv1 ni v3, pas d’écriture. Une community fausse ne produit qu’une absence de réponse (« No SNMP response »). Le client n’a été testé que sur des trames encodées/décodées, pas contre un vrai agent.
 
+## Flux de backup
+
+Un flux va de la machine sauvegardée à celle qui garde la copie (bouton **Backups** de la barre d’outils, ou clic droit sur un nœud → **New Backup Flow From Here**). Ce n’est pas un câble : il ne compte ni dans la logique parent / secours ni dans l’état « injoignable ». Il est dessiné en pointillés fléchés, avec sa légende (nom, âge du dernier backup) au-dessus des nœuds ; la case **Show flows on the canvas** de la liste le masque (`settings.showFlows`).
+
+- **Document** : tableau `flows` au même niveau que `links`. Chaque flux : `id`, `name`, `sourceNodeId`, `targetNodeId`, `tool`, `schedule` (texte libre), `maxAgeHours` (1 à 8784, 26 par défaut) et `check`. Un flux dont une extrémité n’est plus un nœud est retiré ; les champs inconnus sont retirés. Les mêmes règles sont appliquées dans la fenêtre (`renderer/js/flows.js`) et dans le backend (`src-tauri/src/flows.rs`).
+- **État** : la vérification donne la date du dernier backup réussi. Le flux est `ok` (vert) tant qu’elle a moins de `maxAgeHours`, `late` (orange) au-delà, `failed` (rouge) si la vérification signale un échec, `unknown` (gris) sans vérification ou si elle n’a pas pu conclure (le motif s’affiche dans la liste et l’infobulle). Le passage à `late` ou `failed` envoie une notification système (si les alertes sont activées).
+- **Fréquence** : toutes les 10 minutes tant que la supervision tourne, et à la demande (**Check Now**). Au plus 8 vérifications en parallèle, 30 s maximum chacune. Le backend lit la topologie enregistrée, pas celle que lui passerait la fenêtre.
+- **Vérification `folder`** (SSH) : date de la modification la plus récente sous un dossier, sur `depth` niveaux (1 à 5). La commande est construite par l’application : `find -printf` (GNU), sinon `stat -c` (BusyBox) ou `stat -f` (BSD, macOS). Le chemin doit être absolu, sans apostrophe ni caractère de contrôle ; il est placé entre apostrophes. Viser le dossier des instantanés plutôt que les blocs de données : `<datastore>/vm` pour PBS, `<dépôt>/snapshots` pour restic, le dépôt Borg avec une profondeur de 1.
+- **Vérification `command`** (SSH) : une commande de l’utilisateur, qui affiche la date du dernier backup réussi (heure Unix en secondes ou millisecondes, date ISO / RFC 3339 ; sans fuseau, c’est l’heure locale) ou une ligne commençant par `FAILED` / `ERROR` suivie du motif. Seule la dernière ligne non vide compte ; un code de sortie non nul rend l’état `unknown`. La commande ne s’exécute **qu’une fois approuvée sur ce poste** : enregistrer le flux dans l’éditeur l’approuve pour ce nœud, et l’approbation est rangée dans `approved_commands.json`, à côté du fichier de topologie (jamais dans la topologie ni dans les exports). Une topologie importée ne peut donc pas lancer de commande avec les mots de passe enregistrés : la confirmation d’import compte ces vérifications, et l’éditeur redemande confirmation pour une commande venue d’un fichier.
+- **Connexion SSH** : celle du nœud choisi dans **Run on** (par défaut la destination) : adresse, port, utilisateur, clé ou mot de passe du trousseau, comme le terminal. La clé d’hôte doit déjà être connue (`known_hosts.json`) : une clé inconnue n’est jamais acceptée par une vérification automatique ; ouvrir une fois un terminal SSH vers ce nœud pour vérifier et approuver son empreinte.
+- **Vérification `http`** : requête GET (3 redirections au plus, réponse de 256 Kio maximum). Le corps est la date, ou bien `field` désigne un champ JSON par un chemin pointé (`jobs.0.last`).
+- **Limites** : un serveur Windows dont le shell SSH par défaut est `cmd` ne comprend pas la commande `folder` ; utiliser `command` avec une commande PowerShell. Les flux ne figurent pas dans l’export image.
+
 ## Structure du projet
 
 ```
@@ -103,6 +116,7 @@ Ptychozoon/
 │   └── js/
 │       ├── dialog.js       # Boîtes alerte / confirmation / saisie dans la page (WebKitGTK n’affiche pas alert, confirm, prompt)
 │       ├── probe-checks.js # Vérifications de sonde par nœud, miroir de probe_kinds.rs
+│       ├── flows.js        # Flux de backup : modèle (miroir de flows.rs), légendes, notifications, flèches
 │       ├── topology.js     # Document de topologie partagé
 │       ├── hosts.js        # Contrôles hôte (IPv4, IPv6, nom) / port / plage, miroir de hosts.rs
 │       ├── probe.js        # Confirmation d’état et lien actif
@@ -133,6 +147,7 @@ Ptychozoon/
 │           ├── search-ui.js     # Recherche de la barre d’outils
 │           ├── node-form.js     # Formulaire d’ajout / modification de nœud
 │           ├── context-menu.js  # Menu clic droit
+│           ├── flows-ui.js      # Flux de backup : liste, éditeur, flèches, vérification périodique
 │           ├── ssh.js           # Terminal SSH
 │           └── discovery-ui.js  # Fenêtre de découverte
 ├── scripts/

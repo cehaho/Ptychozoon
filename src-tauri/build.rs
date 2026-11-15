@@ -28,6 +28,8 @@ fn main() {
         "actions_wake",
         "snmp_start",
         "snmp_stop",
+        "flows_check",
+        "flows_approve",
     ];
     tauri_build::try_build(
         tauri_build::Attributes::new()

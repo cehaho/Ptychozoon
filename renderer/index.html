@@ -35,6 +35,11 @@
       <span>Discover</span>
     </button>
 
+    <button class="toolbar-btn" id="btn-flows" title="Backup Flows">
+      <i data-lucide="database-backup" class="w-4 h-4"></i>
+      <span>Backups</span>
+    </button>
+
     <button class="toolbar-btn" id="btn-snap" title="Toggle Snap to Grid">
       <i data-lucide="grid-3x3" class="w-4 h-4"></i>
       <span>Snap to Grid</span>
@@ -90,7 +95,7 @@
         <i data-lucide="search" class="w-4 h-4" style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--faint); pointer-events: none;"></i>
         <input type="text" id="node-search" placeholder="Search nodes... (Ctrl+F)" spellcheck="false" autocomplete="off"
                title="Name, address or type. Filters: status:down vlan:10 zone:dmz type:server ip:10.0. -type:docker. Enter / arrows: next match, Esc: clear"
-               style="height: 32px; padding: 0 10px 0 32px; border-radius: 3px; background: var(--control); color: var(--text); font-size: 12px; width: 200px; outline: none;">
+               style="height: 32px; padding: 0 10px 0 32px; border-radius: 3px; background: var(--control); color: var(--text); font-size: 12px; width: 170px; outline: none;">
         <span id="node-search-count" class="hidden text-xs text-slate-500 font-mono" title="Current match / matches"></span>
       </div>
       <select id="node-filter-status" style="height: 32px; padding: 0 10px; border-radius: 3px; border: 1px solid var(--border-strong); font-size: 12px; outline: none; cursor: pointer;">
@@ -119,6 +124,7 @@
           <div id="grid-layer" class="grid-bg"><div id="grid-labels"></div></div>
           <svg id="connections-layer" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none"></svg>
           <div id="tree-container" style="position:absolute; inset:0; z-index:20; pointer-events:none;"></div>
+          <svg id="flows-label-layer" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none"></svg>
           <!-- Selection rectangle for multi-select -->
           <div id="selection-rect" class="selection-rect hidden"></div>
         </div>
@@ -266,6 +272,155 @@
       <button class="btn btn-secondary" data-close-modal="discovery-modal">Close</button>
       <button class="btn btn-primary" id="btn-start-scan" data-action="start-scan">Start Scan</button>
       <button class="btn btn-primary hidden" id="btn-add-discovered" data-action="add-discovered">Add Selected to Canvas</button>
+    </div>
+  </div>
+</div>
+
+<!-- Backup Flows Modal -->
+<div id="flows-modal" class="modal-overlay hidden">
+  <div class="modal" style="width: 760px; max-width: 95vw;">
+    <div class="modal-header">
+      <h3><i data-lucide="database-backup" class="w-5 h-5 inline mr-2"></i>Backup Flows</h3>
+      <button data-close-modal="flows-modal" class="text-slate-400 hover:text-ink">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
+    </div>
+    <div class="modal-body">
+      <p class="flows-intro">
+        A flow goes from the machine that is backed up to the one that stores the copy. Its check finds
+        when the last good backup ran: green while it is recent enough, orange when late, red when it failed.
+      </p>
+      <label class="flows-toggle">
+        <input type="checkbox" id="flows-show"> Show flows on the canvas
+      </label>
+      <div id="flows-list" class="flows-list"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" data-close-modal="flows-modal">Close</button>
+      <button class="btn btn-secondary" data-action="check-flows">
+        <i data-lucide="refresh-cw" class="w-4 h-4"></i> Check Now
+      </button>
+      <button class="btn btn-primary" data-action="add-flow">
+        <i data-lucide="plus" class="w-4 h-4"></i> Add Flow
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Backup Flow Editor -->
+<div id="flow-edit-modal" class="modal-overlay hidden">
+  <div class="modal" style="width: 560px;">
+    <div class="modal-header">
+      <h3 id="flow-edit-title"><i data-lucide="database-backup" class="w-5 h-5 inline mr-2"></i>Backup Flow</h3>
+      <button data-close-modal="flow-edit-modal" class="text-slate-400 hover:text-ink">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div class="grid grid-cols-2 gap-4">
+        <div class="form-group">
+          <label class="form-label">Name</label>
+          <input type="text" id="flow-name" class="form-input" maxlength="80" placeholder="Nightly VMs">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Tool</label>
+          <input type="text" id="flow-tool" class="form-input" maxlength="40" list="flow-tools" placeholder="Proxmox Backup Server">
+          <datalist id="flow-tools">
+            <option value="Proxmox Backup Server"></option>
+            <option value="Veeam"></option>
+            <option value="Synology Hyper Backup"></option>
+            <option value="Active Backup for Business"></option>
+            <option value="restic"></option>
+            <option value="Borg"></option>
+            <option value="rsync"></option>
+            <option value="rclone"></option>
+            <option value="Duplicati"></option>
+            <option value="UrBackup"></option>
+          </datalist>
+        </div>
+      </div>
+      <div class="grid grid-cols-2 gap-4">
+        <div class="form-group">
+          <label class="form-label">From (backed up)</label>
+          <select id="flow-source" class="form-input"></select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">To (stores the copy)</label>
+          <select id="flow-target" class="form-input"></select>
+        </div>
+      </div>
+      <div class="grid grid-cols-2 gap-4">
+        <div class="form-group">
+          <label class="form-label">Schedule</label>
+          <input type="text" id="flow-schedule" class="form-input" maxlength="40" placeholder="Daily 02:00">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Late after (hours)</label>
+          <input type="number" id="flow-max-age" class="form-input" min="1" max="8784" step="1">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Check</label>
+        <select id="flow-check-type" class="form-input">
+          <option value="none">None (drawn only)</option>
+          <option value="folder">Newest file in a folder (SSH)</option>
+          <option value="command">Command (SSH)</option>
+          <option value="http">URL (HTTP)</option>
+        </select>
+      </div>
+      <div id="flow-check-ssh" class="form-group hidden">
+        <label class="form-label">Run on</label>
+        <select id="flow-check-node" class="form-input"></select>
+        <p class="flow-hint">Uses the SSH login of that node (Edit Node). Its host key must be trusted: open an SSH terminal to it once.</p>
+      </div>
+      <div id="flow-check-folder" class="hidden">
+        <div class="grid gap-4" style="grid-template-columns: 1fr 110px;">
+          <div class="form-group">
+            <label class="form-label">Folder</label>
+            <input type="text" id="flow-folder" class="form-input font-mono" placeholder="/mnt/datastore/backup/vm" spellcheck="false">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Depth</label>
+            <select id="flow-depth" class="form-input">
+              <option value="1">1</option><option value="2">2</option><option value="3">3</option>
+              <option value="4">4</option><option value="5">5</option>
+            </select>
+          </div>
+        </div>
+        <p class="flow-hint">The newest change under that folder counts as the last backup. Point at the snapshots,
+          not the data chunks: PBS <code>&lt;datastore&gt;/vm</code>, restic <code>&lt;repo&gt;/snapshots</code>,
+          Borg <code>&lt;repo&gt;</code> with depth 1.</p>
+      </div>
+      <div id="flow-check-command" class="hidden">
+        <div class="form-group">
+          <label class="form-label">Command</label>
+          <textarea id="flow-command" class="form-input font-mono flow-command" rows="3" spellcheck="false"
+            placeholder="restic -r /srv/restic snapshots --latest 1 --json | jq -r '.[0].time'"></textarea>
+        </div>
+        <p class="flow-hint">It prints the date of the last good backup (Unix time or ISO date), or a line starting
+          with <code>FAILED</code>. Saving the flow approves this command on this computer only.</p>
+      </div>
+      <div id="flow-check-http" class="hidden">
+        <div class="grid gap-4" style="grid-template-columns: 1fr 160px;">
+          <div class="form-group">
+            <label class="form-label">URL</label>
+            <input type="text" id="flow-url" class="form-input font-mono" placeholder="https://nas.lan/backup-status.json" spellcheck="false">
+          </div>
+          <div class="form-group">
+            <label class="form-label">JSON field</label>
+            <input type="text" id="flow-field" class="form-input font-mono" placeholder="last.time" spellcheck="false">
+          </div>
+        </div>
+        <p class="flow-hint">The response, or that field of it, is the date of the last good backup.</p>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary flow-delete hidden" id="flow-delete" data-action="delete-flow">
+        <i data-lucide="trash-2" class="w-4 h-4"></i> Delete
+      </button>
+      <div style="flex: 1;"></div>
+      <button class="btn btn-secondary" data-close-modal="flow-edit-modal">Cancel</button>
+      <button class="btn btn-primary" data-action="save-flow">Save</button>
     </div>
   </div>
 </div>
@@ -485,6 +640,10 @@
     <i data-lucide="clock" class="w-4 h-4"></i>
     <span>Status History</span>
   </div>
+  <div class="context-menu-item" data-context-action="new-flow">
+    <i data-lucide="database-backup" class="w-4 h-4"></i>
+    <span>New Backup Flow From Here</span>
+  </div>
   <div id="context-container-section" class="hidden">
     <div class="context-menu-divider"></div>
     <div id="context-container-toggle" class="context-menu-item" data-context-action="toggle-container">
@@ -536,6 +695,7 @@
      js/app/libs.js re-exports them to the modules. -->
 <script src="js/dialog.js"></script>
 <script src="js/probe-checks.js"></script>
+<script src="js/flows.js"></script>
 <script src="js/topology.js"></script>
 <script src="js/hosts.js"></script>
 <script src="js/probe.js"></script>

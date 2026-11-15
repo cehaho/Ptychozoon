@@ -8,6 +8,7 @@ import { toastError, toastSuccess } from './ui.js';
 import { renderTree } from './canvas-render.js';
 import { refreshHostList } from './host-list.js';
 import { AlertNotifier } from './alert-notifier.js';
+import { startFlowChecks, stopFlowChecks } from './flows-ui.js';
 
 const uptimeTrackers = new Map();
 
@@ -73,6 +74,7 @@ export async function startMonitoring() {
     confirmations: Probe.confirmationCount(settings.confirmations)
   });
   SnmpUI.start(state.config);
+  startFlowChecks();
 
   state.monitoringActive = true;
   document.getElementById('btn-monitoring').classList.add('active');
@@ -83,6 +85,7 @@ export async function stopMonitoring() {
 
   await window.desktopAPI.monitor.stop();
   SnmpUI.stop();
+  stopFlowChecks();
   state.monitoringActive = false;
   document.getElementById('btn-monitoring').classList.remove('active');
 }

@@ -3,6 +3,7 @@ mod alerts;
 mod config;
 mod enrich;
 mod export;
+mod flows;
 mod hosts;
 mod known_hosts;
 mod known_hosts_admin;
@@ -308,6 +309,8 @@ pub fn run() {
             actions_wake,
             snmp::snmp_start,
             snmp::snmp_stop,
+            flows::flows_check,
+            flows::flows_approve,
         ])
         .run(tauri::generate_context!())
         .expect("error while building tauri application");

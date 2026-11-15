@@ -18,7 +18,8 @@
       },
       "nodes": [],
       "links": [],
-      "ports": []
+      "ports": [],
+      "flows": []
     }
   },
   {
@@ -178,7 +179,8 @@
           "side": "bottom",
           "nodeId": "b"
         }
-      ]
+      ],
+      "flows": []
     }
   },
   {
@@ -209,7 +211,8 @@
       },
       "nodes": [],
       "links": [],
-      "ports": []
+      "ports": [],
+      "flows": []
     }
   },
   {
@@ -334,7 +337,8 @@
           "side": "bottom",
           "nodeId": "nas"
         }
-      ]
+      ],
+      "flows": []
     }
   },
   {
@@ -442,7 +446,8 @@
           "side": "top",
           "nodeId": "sw"
         }
-      ]
+      ],
+      "flows": []
     }
   },
   {
@@ -532,7 +537,8 @@
           "side": "bottom",
           "nodeId": "node_migrated_1"
         }
-      ]
+      ],
+      "flows": []
     }
   },
   {
@@ -588,7 +594,8 @@
           "side": "left",
           "nodeId": "a"
         }
-      ]
+      ],
+      "flows": []
     }
   },
   {
@@ -732,7 +739,8 @@
           "side": "bottom",
           "nodeId": "b"
         }
-      ]
+      ],
+      "flows": []
     }
   },
   {
@@ -796,7 +804,8 @@
           "side": "bottom",
           "nodeId": "a"
         }
-      ]
+      ],
+      "flows": []
     }
   },
   {
@@ -895,5 +904,427 @@
       ]
     },
     "error": "Node a probe: tcp.ports holds an invalid port"
+  },
+  {
+    "name": "backup flows are cleaned and kept",
+    "input": {
+      "schemaVersion": 1,
+      "settings": {
+        "showGrid": false,
+        "gridSize": 50,
+        "snapToGrid": false,
+        "theme": "light",
+        "probeIntervalMs": 10000,
+        "confirmations": 3,
+        "alertsEnabled": false,
+        "alertCooldownMs": 120000
+      },
+      "nodes": [
+        {
+          "id": "a",
+          "name": "A",
+          "address": "10.0.0.1",
+          "x": 10,
+          "y": 20,
+          "ports": [
+            {
+              "id": "a_in",
+              "name": "IN",
+              "side": "top"
+            },
+            {
+              "id": "a_out",
+              "name": "OUT",
+              "side": "bottom"
+            }
+          ]
+        },
+        {
+          "id": "b",
+          "name": "B",
+          "address": "10.0.0.2",
+          "x": 30,
+          "y": 40,
+          "ports": [
+            {
+              "id": "b_in",
+              "name": "IN",
+              "side": "top"
+            },
+            {
+              "id": "b_out",
+              "name": "OUT",
+              "side": "bottom"
+            }
+          ]
+        }
+      ],
+      "links": [
+        {
+          "id": "link_b_primary",
+          "sourceNodeId": "a",
+          "sourcePortId": "a_out",
+          "targetNodeId": "b",
+          "targetPortId": "b_in",
+          "role": "primary",
+          "medium": "RJ45",
+          "speed": "1G"
+        }
+      ],
+      "ports": [],
+      "flows": [
+        {
+          "id": "f1",
+          "name": " Nightly VMs ",
+          "sourceNodeId": "a",
+          "targetNodeId": "b",
+          "tool": "PBS",
+          "schedule": "02:00",
+          "maxAgeHours": 25.6,
+          "status": "ok",
+          "check": {
+            "type": "folder",
+            "path": "/mnt/datastore/vm",
+            "depth": 9,
+            "nodeId": "gone"
+          }
+        },
+        {
+          "id": "f2",
+          "sourceNodeId": "a",
+          "targetNodeId": "missing"
+        },
+        {
+          "id": "f3",
+          "sourceNodeId": "b",
+          "targetNodeId": "b"
+        },
+        {
+          "id": "f1",
+          "sourceNodeId": "b",
+          "targetNodeId": "a"
+        },
+        {
+          "sourceNodeId": "b",
+          "targetNodeId": "a",
+          "maxAgeHours": "12",
+          "check": {
+            "type": "command",
+            "nodeId": "a",
+            "command": "  restic snapshots --latest 1 --json | jq -r '.[0].time'\u0007\n"
+          }
+        },
+        {
+          "id": "f6",
+          "sourceNodeId": "a",
+          "targetNodeId": "b",
+          "maxAgeHours": 1000000000,
+          "check": {
+            "type": "http",
+            "url": " https://nas.lan/backup.json ",
+            "field": "last.time",
+            "nodeId": "a"
+          }
+        },
+        {
+          "id": "f7",
+          "sourceNodeId": "a",
+          "targetNodeId": "b",
+          "check": {
+            "type": "telnet"
+          }
+        }
+      ]
+    },
+    "document": {
+      "schemaVersion": 1,
+      "settings": {
+        "showGrid": false,
+        "gridSize": 50,
+        "snapToGrid": false,
+        "theme": "light",
+        "probeIntervalMs": 10000,
+        "confirmations": 3,
+        "alertsEnabled": false,
+        "alertCooldownMs": 120000
+      },
+      "nodes": [
+        {
+          "id": "a",
+          "name": "A",
+          "address": "10.0.0.1",
+          "x": 10,
+          "y": 20,
+          "ports": [
+            {
+              "id": "a_in",
+              "name": "IN",
+              "side": "top"
+            },
+            {
+              "id": "a_out",
+              "name": "OUT",
+              "side": "bottom"
+            }
+          ]
+        },
+        {
+          "id": "b",
+          "name": "B",
+          "address": "10.0.0.2",
+          "x": 30,
+          "y": 40,
+          "ports": [
+            {
+              "id": "b_in",
+              "name": "IN",
+              "side": "top"
+            },
+            {
+              "id": "b_out",
+              "name": "OUT",
+              "side": "bottom"
+            }
+          ]
+        }
+      ],
+      "links": [
+        {
+          "id": "link_b_primary",
+          "sourceNodeId": "a",
+          "sourcePortId": "a_out",
+          "targetNodeId": "b",
+          "targetPortId": "b_in",
+          "role": "primary",
+          "medium": "RJ45",
+          "speed": "1G"
+        }
+      ],
+      "ports": [
+        {
+          "id": "a_in",
+          "name": "IN",
+          "side": "top",
+          "nodeId": "a"
+        },
+        {
+          "id": "a_out",
+          "name": "OUT",
+          "side": "bottom",
+          "nodeId": "a"
+        },
+        {
+          "id": "b_in",
+          "name": "IN",
+          "side": "top",
+          "nodeId": "b"
+        },
+        {
+          "id": "b_out",
+          "name": "OUT",
+          "side": "bottom",
+          "nodeId": "b"
+        }
+      ],
+      "flows": [
+        {
+          "id": "f1",
+          "name": "Nightly VMs",
+          "sourceNodeId": "a",
+          "targetNodeId": "b",
+          "tool": "PBS",
+          "schedule": "02:00",
+          "maxAgeHours": 26,
+          "check": {
+            "type": "folder",
+            "nodeId": "b",
+            "path": "/mnt/datastore/vm",
+            "depth": 5
+          }
+        },
+        {
+          "id": "flow_migrated_4",
+          "name": "",
+          "sourceNodeId": "b",
+          "targetNodeId": "a",
+          "tool": "",
+          "schedule": "",
+          "maxAgeHours": 26,
+          "check": {
+            "type": "command",
+            "nodeId": "a",
+            "command": "restic snapshots --latest 1 --json | jq -r '.[0].time'"
+          }
+        },
+        {
+          "id": "f6",
+          "name": "",
+          "sourceNodeId": "a",
+          "targetNodeId": "b",
+          "tool": "",
+          "schedule": "",
+          "maxAgeHours": 8784,
+          "check": {
+            "type": "http",
+            "url": "https://nas.lan/backup.json",
+            "field": "last.time"
+          }
+        },
+        {
+          "id": "f7",
+          "name": "",
+          "sourceNodeId": "a",
+          "targetNodeId": "b",
+          "tool": "",
+          "schedule": "",
+          "maxAgeHours": 26,
+          "check": {
+            "type": "none"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "name": "flows must be an array of objects",
+    "input": {
+      "schemaVersion": 1,
+      "settings": {
+        "showGrid": false,
+        "gridSize": 50,
+        "snapToGrid": false,
+        "theme": "light",
+        "probeIntervalMs": 10000,
+        "confirmations": 3,
+        "alertsEnabled": false,
+        "alertCooldownMs": 120000
+      },
+      "nodes": [
+        {
+          "id": "a",
+          "name": "A",
+          "address": "10.0.0.1",
+          "x": 10,
+          "y": 20,
+          "ports": [
+            {
+              "id": "a_in",
+              "name": "IN",
+              "side": "top"
+            },
+            {
+              "id": "a_out",
+              "name": "OUT",
+              "side": "bottom"
+            }
+          ]
+        },
+        {
+          "id": "b",
+          "name": "B",
+          "address": "10.0.0.2",
+          "x": 30,
+          "y": 40,
+          "ports": [
+            {
+              "id": "b_in",
+              "name": "IN",
+              "side": "top"
+            },
+            {
+              "id": "b_out",
+              "name": "OUT",
+              "side": "bottom"
+            }
+          ]
+        }
+      ],
+      "links": [
+        {
+          "id": "link_b_primary",
+          "sourceNodeId": "a",
+          "sourcePortId": "a_out",
+          "targetNodeId": "b",
+          "targetPortId": "b_in",
+          "role": "primary",
+          "medium": "RJ45",
+          "speed": "1G"
+        }
+      ],
+      "ports": [],
+      "flows": {}
+    },
+    "error": "Configuration flows must be an array of objects"
+  },
+  {
+    "name": "flows items must be objects",
+    "input": {
+      "schemaVersion": 1,
+      "settings": {
+        "showGrid": false,
+        "gridSize": 50,
+        "snapToGrid": false,
+        "theme": "light",
+        "probeIntervalMs": 10000,
+        "confirmations": 3,
+        "alertsEnabled": false,
+        "alertCooldownMs": 120000
+      },
+      "nodes": [
+        {
+          "id": "a",
+          "name": "A",
+          "address": "10.0.0.1",
+          "x": 10,
+          "y": 20,
+          "ports": [
+            {
+              "id": "a_in",
+              "name": "IN",
+              "side": "top"
+            },
+            {
+              "id": "a_out",
+              "name": "OUT",
+              "side": "bottom"
+            }
+          ]
+        },
+        {
+          "id": "b",
+          "name": "B",
+          "address": "10.0.0.2",
+          "x": 30,
+          "y": 40,
+          "ports": [
+            {
+              "id": "b_in",
+              "name": "IN",
+              "side": "top"
+            },
+            {
+              "id": "b_out",
+              "name": "OUT",
+              "side": "bottom"
+            }
+          ]
+        }
+      ],
+      "links": [
+        {
+          "id": "link_b_primary",
+          "sourceNodeId": "a",
+          "sourcePortId": "a_out",
+          "targetNodeId": "b",
+          "targetPortId": "b_in",
+          "role": "primary",
+          "medium": "RJ45",
+          "speed": "1G"
+        }
+      ],
+      "ports": [],
+      "flows": [1]
+    },
+    "error": "Configuration flows must be an array of objects"
   }
 ]

@@ -116,6 +116,18 @@ body {
   border-color: var(--accent);
   box-shadow: var(--shadow-float);
 }
+/* Captions of the backup flows, above the nodes (the arrows stay below). */
+#flows-label-layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 300%;
+  height: 300%;
+  z-index: 25;
+  pointer-events: none;
+  overflow: visible;
+}
+
 #connections-layer {
   position: absolute;
   top: 0;
@@ -346,7 +358,7 @@ body.dragging-node #viewport {
   white-space: nowrap;
   flex-shrink: 0;
 }
-@media (max-width: 1500px) {
+@media (max-width: 1660px) {
   #toolbar .toolbar-btn span {
     display: none;
   }
@@ -456,6 +468,10 @@ select option {
   outline-offset: 1px;
 }
 .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
   height: 32px;
   padding: 0 16px;
   border-radius: var(--radius);
@@ -1330,4 +1346,156 @@ select option {
 }
 #node-search:focus {
   border-color: var(--accent);
+}
+
+/* --- BACKUP FLOWS --- */
+.flow-hitbox {
+  fill: none;
+  stroke: transparent;
+  stroke-width: 14;
+  cursor: pointer;
+}
+.flow-path {
+  animation: flow-march 1.2s linear infinite;
+  pointer-events: none;
+}
+.flow-unknown .flow-path {
+  animation: none;
+}
+.flow-group:hover .flow-path {
+  stroke-width: 3;
+}
+@keyframes flow-march {
+  to {
+    stroke-dashoffset: -14;
+  }
+}
+.flow-label-bg {
+  fill: var(--surface);
+  stroke-width: 1;
+  cursor: pointer;
+}
+.flow-label {
+  fill: var(--text);
+  font-size: 10px;
+  font-family: var(--font-mono);
+  cursor: pointer;
+}
+.flows-intro {
+  font-size: 12px;
+  color: var(--muted);
+  margin-bottom: 12px;
+}
+.flows-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--text);
+  margin-bottom: 12px;
+}
+.flows-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.flows-empty {
+  padding: 24px;
+  text-align: center;
+  font-size: 12px;
+  color: var(--faint);
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius);
+}
+.flow-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+.flow-dot {
+  flex-shrink: 0;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+}
+.flow-row-main {
+  flex: 1;
+  min-width: 0;
+}
+.flow-row-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+}
+.flow-row-route {
+  margin-left: 6px;
+  font-weight: 400;
+  font-size: 12px;
+  color: var(--muted);
+}
+.flow-row-meta {
+  font-size: 11px;
+  color: var(--faint);
+}
+.flow-row-detail {
+  margin-top: 2px;
+  font-size: 11px;
+  font-family: var(--font-mono);
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+.flow-detail-failed {
+  color: var(--red);
+}
+.flow-state {
+  flex-shrink: 0;
+  padding: 2px 8px;
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: var(--radius);
+  background: var(--soft);
+  color: var(--faint);
+}
+.flow-state-ok {
+  background: var(--green-soft);
+  color: var(--green);
+}
+.flow-state-late {
+  background: var(--amber-soft);
+  color: var(--amber);
+}
+.flow-state-failed {
+  background: var(--red-soft);
+  color: var(--red);
+}
+.btn.flow-row-edit {
+  height: 28px;
+  padding: 0 12px;
+}
+.flow-hint {
+  margin-top: -8px;
+  margin-bottom: 14px;
+  font-size: 11px;
+  color: var(--faint);
+}
+.flow-hint code {
+  font-family: var(--font-mono);
+  color: var(--muted);
+}
+.flow-command {
+  height: auto;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  resize: vertical;
+}
+.btn.flow-delete {
+  color: var(--red);
+}
+.form-group .flow-hint {
+  margin-top: 6px;
+  margin-bottom: 0;
 }

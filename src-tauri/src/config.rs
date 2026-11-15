@@ -290,6 +290,11 @@ pub fn known_hosts_path(app: &AppHandle) -> Result<PathBuf, String> {
     Ok(resolve_config_path(app)?.with_file_name("known_hosts.json"))
 }
 
+/// The topology file; other local data files sit beside it.
+pub fn config_path(app: &AppHandle) -> Result<PathBuf, String> {
+    resolve_config_path(app)
+}
+
 fn resolve_config_path(app: &AppHandle) -> Result<PathBuf, String> {
     if let Some(legacy) = legacy_config_path()
         && legacy.is_file()
