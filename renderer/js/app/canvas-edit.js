@@ -14,7 +14,7 @@ import { saveStateForUndo } from './undo.js';
 
 // Connection dragging state
 let isConnecting = false;
-let connectionStart = null; // { nodeId, portId, element }
+let connectionStart = null; // { nodeId, portId, side, element }
 
 // Node drag state (read by canvas-view.js)
 export let isDragging = false;
@@ -34,9 +34,12 @@ export function startConnection(e, node, portEl) {
   isConnecting = true;
   connectionStart = {
     nodeId: node.id,
-    portId: portEl.dataset.portId,
+    portId: portEl.dataset.portId || null,
+    side: portEl.dataset.side,
     element: portEl
   };
+  // While a link is drawn, every node shows its free-side handles.
+  document.body.classList.add('connecting');
 
   // Add temporary line SVG
   const svg = document.getElementById('connections-layer');
@@ -60,7 +63,9 @@ function handleConnectionDrag(e) {
 
   const sourceEl = document.getElementById(`node-${connectionStart.nodeId}`);
   const sourceNode = state.config.nodes.find((n) => n.id === connectionStart.nodeId);
-  const sourcePort = sourceNode?.ports?.find((p) => p.id === connectionStart.portId);
+  const sourcePort = sourceNode?.ports?.find((p) => p.id === connectionStart.portId) || {
+    side: connectionStart.side
+  };
   const startPos = getPortPosition(sourceEl, sourcePort, sourceNode);
 
   // Get mouse position relative to world
@@ -79,9 +84,19 @@ function handleConnectionDrag(e) {
   tempLine.setAttribute('d', d);
 }
 
+// Port of a link end. A free-side handle has no port yet: one is added
+// to the node on that side.
+function resolvePort(node, portId, side) {
+  if (portId) return portId;
+  const port = TopologyCanvas.sidePort(node.id, node.ports, side);
+  node.ports = [...(node.ports || []), port];
+  return port.id;
+}
+
 function endConnection(e) {
   document.removeEventListener('mousemove', handleConnectionDrag);
   document.removeEventListener('mouseup', endConnection);
+  document.body.classList.remove('connecting');
 
   // Remove temp line
   const tempLine = document.getElementById('temp-connection');
@@ -97,14 +112,17 @@ function endConnection(e) {
   const targetPort = e.target.closest('.port-handle');
   if (targetPort && targetPort !== connectionStart.element) {
     const targetNodeId = targetPort.dataset.nodeId;
-    const targetPortId = targetPort.dataset.portId;
+    const targetPortId = targetPort.dataset.portId || null;
+    const targetSide = targetPort.dataset.side;
 
     // Don't connect to same node
     if (targetNodeId !== connectionStart.nodeId) {
       // Check if connection already exists
       const existingConn = state.config.links.find(
         (c) =>
-          (c.sourceNodeId === connectionStart.nodeId &&
+          (connectionStart.portId &&
+            targetPortId &&
+            c.sourceNodeId === connectionStart.nodeId &&
             c.sourcePortId === connectionStart.portId &&
             c.targetNodeId === targetNodeId &&
             c.targetPortId === targetPortId) ||
@@ -126,9 +144,9 @@ function endConnection(e) {
         state.config.links.push({
           id: `conn_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
           sourceNodeId: connectionStart.nodeId,
-          sourcePortId: connectionStart.portId,
+          sourcePortId: resolvePort(sourceNode, connectionStart.portId, connectionStart.side),
           targetNodeId: targetNodeId,
-          targetPortId: targetPortId,
+          targetPortId: resolvePort(targetNode, targetPortId, targetSide),
           role: 'primary',
           medium: null,
           speed: null
