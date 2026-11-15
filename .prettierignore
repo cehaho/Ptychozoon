@@ -1,0 +1,7 @@
+node_modules/
+renderer/vendor/
+src-tauri/
+dist/
+package-lock.json
+*.html
+*.md

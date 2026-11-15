@@ -1,0 +1,187 @@
+{
+  "isSafeHost": [
+    ["192.168.1.1", true],
+    ["0.0.0.0", true],
+    ["255.255.255.255", true],
+    ["256.1.1.1", true],
+    ["192.168.1", true],
+    ["192.168.01.1", false],
+    ["001", false],
+    ["0", true],
+    ["10.0.0.1.", false],
+    [".example.com", false],
+    ["example..com", false],
+    ["router", true],
+    ["router-1.lan", true],
+    ["Router.LAN", true],
+    ["-router", false],
+    ["router-", false],
+    ["a", true],
+    ["under_score", false],
+    ["host name", false],
+    ["host;rm", false],
+    ["-c1", false],
+    ["", false],
+    ["a.b.c.d.e", true],
+    ["aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", true],
+    ["aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", false],
+    ["::1", true],
+    ["2001:db8::1", true],
+    ["fe80::1%eth0", true],
+    ["2001:db8::1%eth0", false],
+    ["[::1]", false],
+    ["2001:db8::g", false]
+  ],
+  "isIpv6": [
+    ["::", true],
+    ["::1", true],
+    ["1::", true],
+    ["2001:db8::1", true],
+    ["2001:DB8:0:0:0:0:0:1", true],
+    ["1:2:3:4:5:6:7:8", true],
+    ["1:2:3:4:5:6:7:8:9", false],
+    ["1:2:3:4:5:6:7::", true],
+    ["::1:2:3:4:5:6:7", true],
+    ["1::2::3", false],
+    ["12345::1", false],
+    ["::ffff:192.168.1.1", true],
+    ["64:ff9b::1.2.3.4", true],
+    ["1:2:3:4:5:6:1.2.3.4", true],
+    ["1:2:3:4:5:6:7:1.2.3.4", false],
+    ["::ffff:192.168.01.1", false],
+    ["::ffff:256.1.1.1", false],
+    ["fe80::1%eth0", true],
+    ["fe80::1%12", true],
+    ["febf::1%eth0", true],
+    ["fec0::1%eth0", false],
+    ["fe80::1%", false],
+    ["fe80::1%-eth0", false],
+    ["fe80::1%eth 0", false],
+    ["fe80::1%abcdefghijabcdefghijabcdefghijab", true],
+    ["fe80::1%abcdefghijabcdefghijabcdefghijabc", false],
+    ["192.168.1.1", false],
+    ["router", false],
+    ["", false],
+    [":", false],
+    [":::", false],
+    ["[::1]", false]
+  ],
+  "normalizeHost": [
+    ["  192.168.1.1  ", "192.168.1.1"],
+    ["[::1]", "::1"],
+    [" [fe80::1%eth0] ", "fe80::1%eth0"],
+    ["[192.168.1.1]", null],
+    ["[::1", null],
+    ["::1]", null],
+    ["router", "router"],
+    ["bad host", null],
+    ["", null]
+  ],
+  "formatHostPort": [
+    ["192.168.1.1", 22, "192.168.1.1:22"],
+    ["router", 8080, "router:8080"],
+    ["::1", 22, "[::1]:22"],
+    ["fe80::1%eth0", 443, "[fe80::1%eth0]:443"]
+  ],
+  "isSafeBaseIp": [
+    ["192.168.1", true],
+    ["10.0.0", true],
+    ["192.168.1.1", false],
+    ["192.168", false],
+    ["192.168.256", false],
+    ["192.168.01", false],
+    ["192.168.1.", false],
+    ["", false]
+  ],
+  "isSafePort": [
+    [0, false],
+    [1, true],
+    [22, true],
+    [65535, true],
+    [65536, false],
+    [-1, false]
+  ],
+  "clampScanRange": [
+    [1, 254, [1, 254]],
+    [10, 20, [10, 20]],
+    [5, 5, [5, 5]],
+    [0, 10, null],
+    [1, 255, null],
+    [20, 10, null],
+    [-5, 10, null]
+  ],
+  "pingCommand": [
+    {
+      "host": "192.168.1.1",
+      "platform": { "node": "linux", "rust": "linux" },
+      "command": "ping",
+      "args": ["-c", "1", "-W", "1", "192.168.1.1"]
+    },
+    {
+      "host": "2001:db8::1",
+      "platform": { "node": "linux", "rust": "linux" },
+      "command": "ping",
+      "args": ["-6", "-c", "1", "-W", "1", "2001:db8::1"]
+    },
+    {
+      "host": "192.168.1.1",
+      "platform": { "node": "win32", "rust": "windows" },
+      "command": "ping",
+      "args": ["-n", "1", "-w", "1000", "192.168.1.1"]
+    },
+    {
+      "host": "::1",
+      "platform": { "node": "win32", "rust": "windows" },
+      "command": "ping",
+      "args": ["-6", "-n", "1", "-w", "1000", "::1"]
+    },
+    {
+      "host": "router",
+      "platform": { "node": "darwin", "rust": "macos" },
+      "command": "ping",
+      "args": ["-c", "1", "-W", "1", "router"]
+    },
+    {
+      "host": "fe80::1%en0",
+      "platform": { "node": "darwin", "rust": "macos" },
+      "command": "ping6",
+      "args": ["-c", "1", "fe80::1%en0"]
+    },
+    {
+      "host": "::1",
+      "platform": { "node": "freebsd", "rust": "freebsd" },
+      "command": "ping6",
+      "args": ["-c", "1", "::1"]
+    },
+    {
+      "host": "::1",
+      "platform": { "node": "openbsd", "rust": "openbsd" },
+      "command": "ping6",
+      "args": ["-c", "1", "::1"]
+    },
+    {
+      "host": "::1",
+      "platform": { "node": "netbsd", "rust": "netbsd" },
+      "command": "ping6",
+      "args": ["-c", "1", "::1"]
+    }
+  ],
+  "monitoringInterval": [
+    [null, 5000],
+    [999, 5000],
+    [1000, 1000],
+    [2500, 2500],
+    [60000, 60000],
+    [60001, 5000],
+    [-1, 5000]
+  ],
+  "confirmationCount": [
+    [null, 2],
+    [1, 2],
+    [2, 2],
+    [3, 3],
+    [10, 10],
+    [11, 2],
+    [2.5, 2]
+  ]
+}

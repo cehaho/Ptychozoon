@@ -1,0 +1,899 @@
+[
+  {
+    "name": "empty document",
+    "input": {
+      "nodes": []
+    },
+    "document": {
+      "schemaVersion": 1,
+      "settings": {
+        "showGrid": true,
+        "gridSize": 100,
+        "snapToGrid": true,
+        "theme": "dark",
+        "probeIntervalMs": 5000,
+        "confirmations": 2,
+        "alertsEnabled": true,
+        "alertCooldownMs": 60000
+      },
+      "nodes": [],
+      "links": [],
+      "ports": []
+    }
+  },
+  {
+    "name": "current document stays as it is",
+    "input": {
+      "schemaVersion": 1,
+      "settings": {
+        "showGrid": false,
+        "gridSize": 50,
+        "snapToGrid": false,
+        "theme": "light",
+        "probeIntervalMs": 10000,
+        "confirmations": 3,
+        "alertsEnabled": false,
+        "alertCooldownMs": 120000
+      },
+      "nodes": [
+        {
+          "id": "a",
+          "name": "A",
+          "address": "10.0.0.1",
+          "x": 10,
+          "y": 20,
+          "ports": [
+            {
+              "id": "a_in",
+              "name": "IN",
+              "side": "top"
+            },
+            {
+              "id": "a_out",
+              "name": "OUT",
+              "side": "bottom"
+            }
+          ]
+        },
+        {
+          "id": "b",
+          "name": "B",
+          "address": "10.0.0.2",
+          "x": 30,
+          "y": 40,
+          "ports": [
+            {
+              "id": "b_in",
+              "name": "IN",
+              "side": "top"
+            },
+            {
+              "id": "b_out",
+              "name": "OUT",
+              "side": "bottom"
+            }
+          ]
+        }
+      ],
+      "links": [
+        {
+          "id": "link_b_primary",
+          "sourceNodeId": "a",
+          "sourcePortId": "a_out",
+          "targetNodeId": "b",
+          "targetPortId": "b_in",
+          "role": "primary",
+          "medium": "RJ45",
+          "speed": "1G"
+        }
+      ],
+      "ports": []
+    },
+    "document": {
+      "schemaVersion": 1,
+      "settings": {
+        "showGrid": false,
+        "gridSize": 50,
+        "snapToGrid": false,
+        "theme": "light",
+        "probeIntervalMs": 10000,
+        "confirmations": 3,
+        "alertsEnabled": false,
+        "alertCooldownMs": 120000
+      },
+      "nodes": [
+        {
+          "id": "a",
+          "name": "A",
+          "address": "10.0.0.1",
+          "x": 10,
+          "y": 20,
+          "ports": [
+            {
+              "id": "a_in",
+              "name": "IN",
+              "side": "top"
+            },
+            {
+              "id": "a_out",
+              "name": "OUT",
+              "side": "bottom"
+            }
+          ]
+        },
+        {
+          "id": "b",
+          "name": "B",
+          "address": "10.0.0.2",
+          "x": 30,
+          "y": 40,
+          "ports": [
+            {
+              "id": "b_in",
+              "name": "IN",
+              "side": "top"
+            },
+            {
+              "id": "b_out",
+              "name": "OUT",
+              "side": "bottom"
+            }
+          ]
+        }
+      ],
+      "links": [
+        {
+          "id": "link_b_primary",
+          "sourceNodeId": "a",
+          "sourcePortId": "a_out",
+          "targetNodeId": "b",
+          "targetPortId": "b_in",
+          "role": "primary",
+          "medium": "RJ45",
+          "speed": "1G"
+        }
+      ],
+      "ports": [
+        {
+          "id": "a_in",
+          "name": "IN",
+          "side": "top",
+          "nodeId": "a"
+        },
+        {
+          "id": "a_out",
+          "name": "OUT",
+          "side": "bottom",
+          "nodeId": "a"
+        },
+        {
+          "id": "b_in",
+          "name": "IN",
+          "side": "top",
+          "nodeId": "b"
+        },
+        {
+          "id": "b_out",
+          "name": "OUT",
+          "side": "bottom",
+          "nodeId": "b"
+        }
+      ]
+    }
+  },
+  {
+    "name": "probe settings out of range fall back, other settings are kept",
+    "input": {
+      "nodes": [],
+      "settings": {
+        "probeIntervalMs": 10,
+        "confirmations": 99,
+        "alertCooldownMs": -5,
+        "gridSize": "big",
+        "theme": 42,
+        "extra": true
+      }
+    },
+    "document": {
+      "schemaVersion": 1,
+      "settings": {
+        "showGrid": true,
+        "gridSize": "big",
+        "snapToGrid": true,
+        "theme": 42,
+        "probeIntervalMs": 5000,
+        "confirmations": 2,
+        "alertsEnabled": true,
+        "alertCooldownMs": 60000,
+        "extra": true
+      },
+      "nodes": [],
+      "links": [],
+      "ports": []
+    }
+  },
+  {
+    "name": "legacy array of nodes with parents",
+    "input": [
+      {
+        "id": "gw",
+        "name": "Gateway",
+        "address": "192.168.1.1",
+        "primaryParentId": null,
+        "x": 50,
+        "y": 80
+      },
+      {
+        "id": "nas",
+        "name": "NAS",
+        "address": "192.168.1.100",
+        "primaryParentId": "gw",
+        "secondaryParentId": "gw",
+        "linkType": "RJ45",
+        "linkSpeed": "1G",
+        "x": 30,
+        "y": 50
+      }
+    ],
+    "document": {
+      "schemaVersion": 1,
+      "settings": {
+        "showGrid": true,
+        "gridSize": 100,
+        "snapToGrid": true,
+        "theme": "dark",
+        "probeIntervalMs": 5000,
+        "confirmations": 2,
+        "alertsEnabled": true,
+        "alertCooldownMs": 60000
+      },
+      "nodes": [
+        {
+          "id": "gw",
+          "name": "Gateway",
+          "address": "192.168.1.1",
+          "x": 50,
+          "y": 80,
+          "ports": [
+            {
+              "id": "gw_in",
+              "name": "IN",
+              "side": "top"
+            },
+            {
+              "id": "gw_out",
+              "name": "OUT",
+              "side": "bottom"
+            }
+          ]
+        },
+        {
+          "id": "nas",
+          "name": "NAS",
+          "address": "192.168.1.100",
+          "x": 30,
+          "y": 50,
+          "ports": [
+            {
+              "id": "nas_in",
+              "name": "IN",
+              "side": "top"
+            },
+            {
+              "id": "nas_out",
+              "name": "OUT",
+              "side": "bottom"
+            }
+          ]
+        }
+      ],
+      "links": [
+        {
+          "id": "link_nas_primary",
+          "sourceNodeId": "gw",
+          "sourcePortId": "gw_out",
+          "targetNodeId": "nas",
+          "targetPortId": "nas_in",
+          "role": "primary",
+          "medium": "RJ45",
+          "speed": "1G"
+        },
+        {
+          "id": "link_nas_failover",
+          "sourceNodeId": "gw",
+          "sourcePortId": "gw_out",
+          "targetNodeId": "nas",
+          "targetPortId": "nas_in",
+          "role": "failover",
+          "medium": null,
+          "speed": null
+        }
+      ],
+      "ports": [
+        {
+          "id": "gw_in",
+          "name": "IN",
+          "side": "top",
+          "nodeId": "gw"
+        },
+        {
+          "id": "gw_out",
+          "name": "OUT",
+          "side": "bottom",
+          "nodeId": "gw"
+        },
+        {
+          "id": "nas_in",
+          "name": "IN",
+          "side": "top",
+          "nodeId": "nas"
+        },
+        {
+          "id": "nas_out",
+          "name": "OUT",
+          "side": "bottom",
+          "nodeId": "nas"
+        }
+      ]
+    }
+  },
+  {
+    "name": "legacy connections become links",
+    "input": {
+      "settings": {
+        "showGrid": true
+      },
+      "nodes": [
+        {
+          "id": "gw",
+          "name": "Gateway",
+          "ports": [
+            {
+              "id": "gw_out",
+              "name": "OUT",
+              "side": "bottom"
+            }
+          ]
+        },
+        {
+          "id": "sw",
+          "name": "Switch",
+          "primaryParentId": "gw",
+          "ports": [
+            {
+              "id": "sw_wan",
+              "name": "WAN",
+              "side": "top"
+            }
+          ]
+        }
+      ],
+      "connections": [
+        {
+          "id": "mouse_1",
+          "sourceNodeId": "gw",
+          "sourcePortId": "gw_out",
+          "targetNodeId": "sw",
+          "targetPortId": "sw_wan",
+          "isFailover": false,
+          "linkType": "Fiber",
+          "linkSpeed": "10G"
+        }
+      ]
+    },
+    "document": {
+      "schemaVersion": 1,
+      "settings": {
+        "showGrid": true,
+        "gridSize": 100,
+        "snapToGrid": true,
+        "theme": "dark",
+        "probeIntervalMs": 5000,
+        "confirmations": 2,
+        "alertsEnabled": true,
+        "alertCooldownMs": 60000
+      },
+      "nodes": [
+        {
+          "id": "gw",
+          "name": "Gateway",
+          "ports": [
+            {
+              "id": "gw_out",
+              "name": "OUT",
+              "side": "bottom"
+            }
+          ]
+        },
+        {
+          "id": "sw",
+          "name": "Switch",
+          "ports": [
+            {
+              "id": "sw_wan",
+              "name": "WAN",
+              "side": "top"
+            }
+          ]
+        }
+      ],
+      "links": [
+        {
+          "id": "mouse_1",
+          "sourceNodeId": "gw",
+          "sourcePortId": "gw_out",
+          "targetNodeId": "sw",
+          "targetPortId": "sw_wan",
+          "role": "primary",
+          "medium": "Fiber",
+          "speed": "10G"
+        }
+      ],
+      "ports": [
+        {
+          "id": "gw_out",
+          "name": "OUT",
+          "side": "bottom",
+          "nodeId": "gw"
+        },
+        {
+          "id": "sw_wan",
+          "name": "WAN",
+          "side": "top",
+          "nodeId": "sw"
+        }
+      ]
+    }
+  },
+  {
+    "name": "nodes without id get one, unknown keys are dropped",
+    "input": {
+      "nodes": [
+        {
+          "name": "no id"
+        },
+        {
+          "id": "",
+          "name": "empty id"
+        }
+      ],
+      "future": 1,
+      "connections": []
+    },
+    "document": {
+      "schemaVersion": 1,
+      "settings": {
+        "showGrid": true,
+        "gridSize": 100,
+        "snapToGrid": true,
+        "theme": "dark",
+        "probeIntervalMs": 5000,
+        "confirmations": 2,
+        "alertsEnabled": true,
+        "alertCooldownMs": 60000
+      },
+      "nodes": [
+        {
+          "name": "no id",
+          "id": "node_migrated_0",
+          "ports": [
+            {
+              "id": "node_migrated_0_in",
+              "name": "IN",
+              "side": "top"
+            },
+            {
+              "id": "node_migrated_0_out",
+              "name": "OUT",
+              "side": "bottom"
+            }
+          ]
+        },
+        {
+          "id": "node_migrated_1",
+          "name": "empty id",
+          "ports": [
+            {
+              "id": "node_migrated_1_in",
+              "name": "IN",
+              "side": "top"
+            },
+            {
+              "id": "node_migrated_1_out",
+              "name": "OUT",
+              "side": "bottom"
+            }
+          ]
+        }
+      ],
+      "links": [],
+      "ports": [
+        {
+          "id": "node_migrated_0_in",
+          "name": "IN",
+          "side": "top",
+          "nodeId": "node_migrated_0"
+        },
+        {
+          "id": "node_migrated_0_out",
+          "name": "OUT",
+          "side": "bottom",
+          "nodeId": "node_migrated_0"
+        },
+        {
+          "id": "node_migrated_1_in",
+          "name": "IN",
+          "side": "top",
+          "nodeId": "node_migrated_1"
+        },
+        {
+          "id": "node_migrated_1_out",
+          "name": "OUT",
+          "side": "bottom",
+          "nodeId": "node_migrated_1"
+        }
+      ]
+    }
+  },
+  {
+    "name": "detached ports attach to their node",
+    "input": {
+      "schemaVersion": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "name": "A"
+        }
+      ],
+      "links": [],
+      "ports": [
+        {
+          "id": "a_eth0",
+          "nodeId": "a",
+          "name": "eth0",
+          "side": "left"
+        }
+      ]
+    },
+    "document": {
+      "schemaVersion": 1,
+      "settings": {
+        "showGrid": true,
+        "gridSize": 100,
+        "snapToGrid": true,
+        "theme": "dark",
+        "probeIntervalMs": 5000,
+        "confirmations": 2,
+        "alertsEnabled": true,
+        "alertCooldownMs": 60000
+      },
+      "nodes": [
+        {
+          "id": "a",
+          "name": "A",
+          "ports": [
+            {
+              "id": "a_eth0",
+              "name": "eth0",
+              "side": "left"
+            }
+          ]
+        }
+      ],
+      "links": [],
+      "ports": [
+        {
+          "id": "a_eth0",
+          "name": "eth0",
+          "side": "left",
+          "nodeId": "a"
+        }
+      ]
+    }
+  },
+  {
+    "name": "links are kept as written; a link without id gets one",
+    "input": {
+      "schemaVersion": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "name": "A"
+        },
+        {
+          "id": "b",
+          "name": "B"
+        }
+      ],
+      "links": [
+        {
+          "id": "ok",
+          "sourceNodeId": "a",
+          "targetNodeId": "b"
+        },
+        {
+          "id": "ghost",
+          "sourceNodeId": "a",
+          "targetNodeId": "zz"
+        },
+        {
+          "sourceNodeId": "b",
+          "targetNodeId": "a"
+        },
+        {
+          "id": "self",
+          "sourceNodeId": "a",
+          "targetNodeId": "a"
+        }
+      ]
+    },
+    "document": {
+      "schemaVersion": 1,
+      "settings": {
+        "showGrid": true,
+        "gridSize": 100,
+        "snapToGrid": true,
+        "theme": "dark",
+        "probeIntervalMs": 5000,
+        "confirmations": 2,
+        "alertsEnabled": true,
+        "alertCooldownMs": 60000
+      },
+      "nodes": [
+        {
+          "id": "a",
+          "name": "A",
+          "ports": [
+            {
+              "id": "a_in",
+              "name": "IN",
+              "side": "top"
+            },
+            {
+              "id": "a_out",
+              "name": "OUT",
+              "side": "bottom"
+            }
+          ]
+        },
+        {
+          "id": "b",
+          "name": "B",
+          "ports": [
+            {
+              "id": "b_in",
+              "name": "IN",
+              "side": "top"
+            },
+            {
+              "id": "b_out",
+              "name": "OUT",
+              "side": "bottom"
+            }
+          ]
+        }
+      ],
+      "links": [
+        {
+          "id": "ok",
+          "sourceNodeId": "a",
+          "targetNodeId": "b",
+          "role": "primary",
+          "medium": null,
+          "speed": null
+        },
+        {
+          "id": "ghost",
+          "sourceNodeId": "a",
+          "targetNodeId": "zz",
+          "role": "primary",
+          "medium": null,
+          "speed": null
+        },
+        {
+          "sourceNodeId": "b",
+          "targetNodeId": "a",
+          "role": "primary",
+          "medium": null,
+          "speed": null,
+          "id": "link_a_primary"
+        },
+        {
+          "id": "self",
+          "sourceNodeId": "a",
+          "targetNodeId": "a",
+          "role": "primary",
+          "medium": null,
+          "speed": null
+        }
+      ],
+      "ports": [
+        {
+          "id": "a_in",
+          "name": "IN",
+          "side": "top",
+          "nodeId": "a"
+        },
+        {
+          "id": "a_out",
+          "name": "OUT",
+          "side": "bottom",
+          "nodeId": "a"
+        },
+        {
+          "id": "b_in",
+          "name": "IN",
+          "side": "top",
+          "nodeId": "b"
+        },
+        {
+          "id": "b_out",
+          "name": "OUT",
+          "side": "bottom",
+          "nodeId": "b"
+        }
+      ]
+    }
+  },
+  {
+    "name": "runtime fields are not kept",
+    "input": {
+      "schemaVersion": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "name": "A",
+          "status": "online",
+          "uptime": 5,
+          "level": 2,
+          "responseTime": 3,
+          "activeParentId": "x",
+          "probeDetail": "ok"
+        }
+      ]
+    },
+    "document": {
+      "schemaVersion": 1,
+      "settings": {
+        "showGrid": true,
+        "gridSize": 100,
+        "snapToGrid": true,
+        "theme": "dark",
+        "probeIntervalMs": 5000,
+        "confirmations": 2,
+        "alertsEnabled": true,
+        "alertCooldownMs": 60000
+      },
+      "nodes": [
+        {
+          "id": "a",
+          "name": "A",
+          "ports": [
+            {
+              "id": "a_in",
+              "name": "IN",
+              "side": "top"
+            },
+            {
+              "id": "a_out",
+              "name": "OUT",
+              "side": "bottom"
+            }
+          ]
+        }
+      ],
+      "links": [],
+      "ports": [
+        {
+          "id": "a_in",
+          "name": "IN",
+          "side": "top",
+          "nodeId": "a"
+        },
+        {
+          "id": "a_out",
+          "name": "OUT",
+          "side": "bottom",
+          "nodeId": "a"
+        }
+      ]
+    }
+  },
+  {
+    "name": "not an object",
+    "input": "hello",
+    "error": "Configuration must be a JSON object"
+  },
+  {
+    "name": "null",
+    "input": null,
+    "error": "Configuration must be a JSON object"
+  },
+  {
+    "name": "no nodes",
+    "input": {
+      "links": []
+    },
+    "error": "Configuration has no nodes"
+  },
+  {
+    "name": "nodes not an array",
+    "input": {
+      "nodes": {}
+    },
+    "error": "Configuration nodes must be an array"
+  },
+  {
+    "name": "a node that is not an object",
+    "input": {
+      "nodes": [1]
+    },
+    "error": "Configuration nodes must be objects"
+  },
+  {
+    "name": "array with a node that is not an object",
+    "input": [
+      {
+        "id": "a"
+      },
+      "b"
+    ],
+    "error": "Configuration nodes must be objects"
+  },
+  {
+    "name": "unknown version",
+    "input": {
+      "schemaVersion": 2,
+      "nodes": []
+    },
+    "error": "Unsupported topology version: 2"
+  },
+  {
+    "name": "links not an array",
+    "input": {
+      "nodes": [],
+      "links": {}
+    },
+    "error": "Configuration links must be an array"
+  },
+  {
+    "name": "connections not an array",
+    "input": {
+      "nodes": [],
+      "connections": "x"
+    },
+    "error": "Configuration connections must be an array"
+  },
+  {
+    "name": "ports not an array",
+    "input": {
+      "nodes": [],
+      "ports": 3
+    },
+    "error": "Configuration ports must be an array"
+  },
+  {
+    "name": "a link that is not an object",
+    "input": {
+      "nodes": [],
+      "links": [null]
+    },
+    "error": "Configuration links must be objects"
+  },
+  {
+    "name": "an invalid probe",
+    "input": {
+      "nodes": [
+        {
+          "id": "a",
+          "probe": {
+            "tcp": {
+              "ports": [70000]
+            }
+          }
+        }
+      ]
+    },
+    "error": "Node a probe: tcp.ports holds an invalid port"
+  }
+]
