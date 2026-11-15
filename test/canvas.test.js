@@ -390,3 +390,29 @@ test('the page loads canvas.js before the app modules', () => {
 test('the module also sets the browser global', () => {
   assert.equal(globalThis.TopologyCanvas, Canvas);
 });
+
+test('freeSides lists the sides of a node that have no port', () => {
+  assert.deepEqual(Canvas.freeSides([]), ['top', 'right', 'bottom', 'left']);
+  assert.deepEqual(
+    Canvas.freeSides([
+      { id: 'a', side: 'top' },
+      { id: 'b', side: 'bottom' }
+    ]),
+    ['right', 'left']
+  );
+  assert.deepEqual(Canvas.freeSides(undefined), ['top', 'right', 'bottom', 'left']);
+});
+
+test('sidePort names the new port after its side and keeps names and ids unique', () => {
+  assert.deepEqual(Canvas.sidePort('n1', [], 'left'), {
+    id: 'n1_left',
+    name: 'LEFT',
+    side: 'left'
+  });
+  const taken = [{ id: 'n1_left', name: 'LEFT', side: 'top' }];
+  assert.deepEqual(Canvas.sidePort('n1', taken, 'left'), {
+    id: 'n1_left2',
+    name: 'LEFT 2',
+    side: 'left'
+  });
+});

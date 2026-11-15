@@ -149,6 +149,29 @@
     }
   }
 
+  const SIDES = ['top', 'right', 'bottom', 'left'];
+
+  // Sides of a node that have no port yet. The canvas offers a handle on
+  // each of them, so a link can be drawn from or to any side.
+  function freeSides(ports) {
+    const used = new Set((ports || []).map((p) => p.side));
+    return SIDES.filter((side) => !used.has(side));
+  }
+
+  // New port for a side handle: named after the side, made unique.
+  function sidePort(nodeId, ports, side) {
+    const list = ports || [];
+    const base = side.toUpperCase();
+    const names = new Set(list.map((p) => p.name));
+    const ids = new Set(list.map((p) => p.id));
+    let n = 1;
+    let name = base;
+    while (names.has(name)) name = `${base} ${++n}`;
+    let id = `${nodeId}_${side}`;
+    for (let i = 2; ids.has(id); i++) id = `${nodeId}_${side}${i}`;
+    return { id: id, name: name, side: side };
+  }
+
   // Cubic curve leaving each port along its side's normal.
   function bezierPath(x1, y1, x2, y2, sourceSide, targetSide) {
     const distance = Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
@@ -353,6 +376,8 @@
     nodesInRect: nodesInRect,
     portOffsetPercent: portOffsetPercent,
     portAnchor: portAnchor,
+    freeSides: freeSides,
+    sidePort: sidePort,
     bezierPath: bezierPath,
     linkLabel: linkLabel,
     labelBox: labelBox,

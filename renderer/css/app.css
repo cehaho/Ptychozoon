@@ -592,6 +592,20 @@ select option {
 .port-handle.connected:hover {
   background: var(--green);
 }
+/* Free-side handle: shown on hover, and on every node while a link is
+   drawn; linking to it adds a port on that side. */
+.port-handle.side-handle {
+  opacity: 0;
+  border-style: dashed;
+  transition: opacity 0.12s;
+}
+.node-container:hover > .node-ports > .port-handle.side-handle,
+.connecting .port-handle.side-handle {
+  opacity: 1;
+}
+.port-handle.side-handle:hover {
+  opacity: 1;
+}
 .port-label {
   position: absolute;
   font-size: 8px;
@@ -623,13 +637,19 @@ select option {
   bottom: auto;
   top: calc(100% + 8px);
 }
+/* Side ports: the label sits above the handle, clear of the link. */
+.port-label[style*='left: -6px'],
+.port-label[style*='right: -6px'] {
+  margin-top: -20px;
+}
 .port-label[style*='left: -6px'] {
-  margin-left: -50px;
+  left: -2px !important;
+  transform: translate(-100%, -50%) !important;
 }
 .port-label[style*='right: -6px'] {
-  margin-right: -50px;
-  right: auto;
-  left: calc(100% + 8px);
+  right: auto !important;
+  left: calc(100% + 2px) !important;
+  transform: translateY(-50%) !important;
 }
 
 /* Selectable connections */

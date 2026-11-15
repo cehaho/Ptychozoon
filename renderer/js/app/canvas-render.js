@@ -208,6 +208,20 @@ export function renderTree(nodes) {
         `;
       });
     });
+    // A handle on each free side: drawing a link from or to it adds the port.
+    TopologyCanvas.freeSides(ports).forEach((side) => {
+      const posStyle =
+        side === 'top' || side === 'bottom'
+          ? `left: 50%; transform: translateX(-50%); ${side}: -6px;`
+          : `top: 50%; transform: translateY(-50%); ${side}: -6px;`;
+      portsHtml += `
+          <div class="port-handle side-handle"
+               style="${posStyle}"
+               data-node-id="${node.id}"
+               data-side="${side}"
+               title="Connect on the ${side}"></div>
+        `;
+    });
     portsHtml += '</div>';
     return portsHtml;
   }
