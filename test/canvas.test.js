@@ -284,12 +284,12 @@ test('minimap draws background, then links, then nodes on top', () => {
     dark: true,
     nodes,
     links,
-    lookFor: () => ({ color: '#ef4444', waiting: false }),
+    lookFor: () => ({ color: '#e5674f', waiting: false }),
     colorFor: (node) => Canvas.minimapNodeColor(false, node.status)
   });
 
   const names = ctx.calls.map((c) => c[0]);
-  assert.deepEqual(ctx.calls[0], ['set fillStyle', '#1e293b']);
+  assert.deepEqual(ctx.calls[0], ['set fillStyle', '#212121']);
   assert.deepEqual(ctx.calls[1], ['fillRect', 0, 0, 200, 150]);
   assert.equal(names.filter((n) => n === 'stroke').length, 1, 'the dangling link is skipped');
   assert.equal(names.filter((n) => n === 'arc').length, 2);
@@ -300,7 +300,7 @@ test('minimap draws background, then links, then nodes on top', () => {
   near(moveTo[1], 20);
   near(moveTo[2], 7.5);
   const fills = ctx.calls.filter((c) => c[0] === 'set fillStyle').map((c) => c[1]);
-  assert.deepEqual(fills.slice(1), ['#22c55e', '#ef4444']);
+  assert.deepEqual(fills.slice(1), ['#5fb85a', '#e5674f']);
   assert.equal(ctx.globalAlpha, 1, 'alpha restored after each link');
 });
 
@@ -315,19 +315,19 @@ test('minimap dims a waiting failover and uses the light background', () => {
       { id: 'b', x: 10, y: 10 }
     ],
     links: [{ sourceNodeId: 'a', targetNodeId: 'b' }],
-    lookFor: () => ({ color: '#94a3b8', waiting: true }),
-    colorFor: () => '#94a3b8'
+    lookFor: () => ({ color: '#8a8a8a', waiting: true }),
+    colorFor: () => '#8a8a8a'
   });
-  assert.deepEqual(ctx.calls[0], ['set fillStyle', '#f1f5f9']);
+  assert.deepEqual(ctx.calls[0], ['set fillStyle', '#f5f4f2']);
   const alphas = ctx.calls.filter((c) => c[0] === 'set globalAlpha').map((c) => c[1]);
   assert.deepEqual(alphas, [0.35, 1]);
 });
 
 test('minimap node colour: selection wins, then status', () => {
-  assert.equal(Canvas.minimapNodeColor(true, 'down'), '#3b82f6');
-  assert.equal(Canvas.minimapNodeColor(false, 'up'), '#22c55e');
-  assert.equal(Canvas.minimapNodeColor(false, 'down'), '#ef4444');
-  assert.equal(Canvas.minimapNodeColor(false, 'unknown'), '#94a3b8');
+  assert.equal(Canvas.minimapNodeColor(true, 'down'), '#4d9fea');
+  assert.equal(Canvas.minimapNodeColor(false, 'up'), '#5fb85a');
+  assert.equal(Canvas.minimapNodeColor(false, 'down'), '#e5674f');
+  assert.equal(Canvas.minimapNodeColor(false, 'unknown'), '#8a8a8a');
 });
 
 test('minimap viewport box tracks pan and zoom and is clipped', () => {

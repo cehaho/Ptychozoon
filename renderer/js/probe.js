@@ -21,9 +21,9 @@
   const DEFAULT_INTERVAL_MS = 5000;
   const DEFAULT_CONFIRMATIONS = 2;
   const TOAST_QUIET_MS = 15000;
-  const COLOR_UP = '#22c55e';
-  const COLOR_DOWN = '#ef4444';
-  const COLOR_UNKNOWN = '#64748b';
+  const COLOR_UP = '#5fb85a';
+  const COLOR_DOWN = '#e5674f';
+  const COLOR_UNKNOWN = '#8a8a8a';
 
   function monitoringInterval(requested) {
     const value = Number(requested);

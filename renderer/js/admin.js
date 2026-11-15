@@ -101,7 +101,7 @@
               <i data-lucide="arrow-left" class="w-5 h-5"></i>
             </button>
             <div>
-              <h1 class="text-2xl font-bold text-white">Ptychozoon Admin</h1>
+              <h1 class="text-2xl font-bold text-ink">Ptychozoon Admin</h1>
               <p class="text-slate-400 text-sm mt-1">Same topology as the canvas. Links, ports, containers, and zones stay in the document.</p>
             </div>
           </div>
@@ -130,7 +130,7 @@
                 s
               </label>
             </div>
-            <button id="admin-import" class="flex items-center gap-2 bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded-lg text-sm">
+            <button id="admin-import" class="flex items-center gap-2 bg-slate-700 hover:bg-slate-600 text-ink px-4 py-2 rounded-lg text-sm">
               <i data-lucide="upload" class="w-4 h-4"></i> Import
             </button>
             <button id="admin-export" class="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-bold">
@@ -142,12 +142,12 @@
           </div>
         </div>
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-          <div class="bg-slate-800/50 rounded-lg p-4 border border-slate-700"><div class="text-sm text-slate-400">Total Nodes</div><div id="stat-total" class="text-2xl font-bold text-white">0</div></div>
-          <div class="bg-slate-800/50 rounded-lg p-4 border border-slate-700"><div class="text-sm text-slate-400">Root Nodes</div><div id="stat-roots" class="text-2xl font-bold text-blue-400">0</div></div>
-          <div class="bg-slate-800/50 rounded-lg p-4 border border-slate-700"><div class="text-sm text-slate-400">With Failover</div><div id="stat-failover" class="text-2xl font-bold text-yellow-400">0</div></div>
-          <div class="bg-slate-800/50 rounded-lg p-4 border border-slate-700"><div class="text-sm text-slate-400">SSH Configured</div><div id="stat-ssh" class="text-2xl font-bold text-green-400">0</div></div>
+          <div class="bg-slate-800/50 rounded-lg p-4 border border-slate-700"><div class="text-xs font-bold uppercase tracking-wider text-slate-400">Total Nodes</div><div id="stat-total" class="mt-1 text-[28px] leading-none font-extrabold tracking-tight tabular-nums text-ink">0</div></div>
+          <div class="bg-slate-800/50 rounded-lg p-4 border border-slate-700"><div class="text-xs font-bold uppercase tracking-wider text-slate-400">Root Nodes</div><div id="stat-roots" class="mt-1 text-[28px] leading-none font-extrabold tracking-tight tabular-nums text-blue-400">0</div></div>
+          <div class="bg-slate-800/50 rounded-lg p-4 border border-slate-700"><div class="text-xs font-bold uppercase tracking-wider text-slate-400">With Failover</div><div id="stat-failover" class="mt-1 text-[28px] leading-none font-extrabold tracking-tight tabular-nums text-yellow-400">0</div></div>
+          <div class="bg-slate-800/50 rounded-lg p-4 border border-slate-700"><div class="text-xs font-bold uppercase tracking-wider text-slate-400">SSH Configured</div><div id="stat-ssh" class="mt-1 text-[28px] leading-none font-extrabold tracking-tight tabular-nums text-green-400">0</div></div>
         </div>
-        <div class="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden shadow-xl">
+        <div class="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden">
           <div class="overflow-x-auto">
             <table class="w-full text-left border-collapse min-w-[1100px]">
               <thead class="bg-slate-900/50 text-slate-400 uppercase text-xs font-bold tracking-wider">

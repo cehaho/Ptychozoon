@@ -33,7 +33,7 @@ export function safeContainerType(type) {
 export function safeCssColor(color) {
   return /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/.test(color || '')
     ? color
-    : '#64748b';
+    : '#8a8a8a';
 }
 
 export function sanitizeSvg(svg) {

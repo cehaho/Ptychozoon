@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' ipc: http://ipc.localhost https://ipc.localhost;">
   <title>Ptychozoon</title>
+  <link rel="stylesheet" href="css/tokens.css">
   <link rel="stylesheet" href="vendor/tailwind.css">
   <script src="vendor/lucide.min.js"></script>
   <link rel="stylesheet" href="vendor/xterm.css">
@@ -19,7 +20,7 @@
   <div id="toolbar">
     <div style="display: flex; align-items: center; gap: 8px;">
       <img src="img/logo.png" alt="" width="28" height="28">
-      <span class="font-bold text-white">Ptychozoon</span>
+      <span class="text-ink" style="font-weight: 800; font-size: 15px; letter-spacing: -0.01em;">Ptychozoon</span>
     </div>
 
     <div class="toolbar-divider"></div>
@@ -86,13 +87,13 @@
     <!-- Search and Filter -->
     <div style="display: flex; align-items: center; gap: 8px;">
       <div style="position: relative;">
-        <i data-lucide="search" class="w-4 h-4" style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: #64748b; pointer-events: none;"></i>
+        <i data-lucide="search" class="w-4 h-4" style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--faint); pointer-events: none;"></i>
         <input type="text" id="node-search" placeholder="Search nodes... (Ctrl+F)" spellcheck="false" autocomplete="off"
                title="Name, address or type. Filters: status:down vlan:10 zone:dmz type:server ip:10.0. -type:docker. Enter / arrows: next match, Esc: clear"
-               style="padding: 6px 10px 6px 32px; border-radius: 6px; background: rgba(0,0,0,0.2); color: #fff; font-size: 12px; width: 200px; outline: none;">
+               style="height: 32px; padding: 0 10px 0 32px; border-radius: 3px; background: var(--control); color: var(--text); font-size: 12px; width: 200px; outline: none;">
         <span id="node-search-count" class="hidden text-xs text-slate-500 font-mono" title="Current match / matches"></span>
       </div>
-      <select id="node-filter-status" style="padding: 6px 10px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.2); color: #fff; font-size: 12px; outline: none; cursor: pointer;">
+      <select id="node-filter-status" style="height: 32px; padding: 0 10px; border-radius: 3px; border: 1px solid var(--border-strong); font-size: 12px; outline: none; cursor: pointer;">
         <option value="all">All Status</option>
         <option value="online">Online</option>
         <option value="offline">Offline</option>
@@ -174,7 +175,7 @@
   <div class="modal">
     <div class="modal-header">
       <h3><i data-lucide="terminal" class="w-5 h-5 inline mr-2"></i>SSH Connection</h3>
-      <button data-close-modal="ssh-modal" class="text-slate-400 hover:text-white">
+      <button data-close-modal="ssh-modal" class="text-slate-400 hover:text-ink">
         <i data-lucide="x" class="w-5 h-5"></i>
       </button>
     </div>
@@ -231,7 +232,7 @@
   <div class="modal" style="width: 760px; max-width: 95vw;">
     <div class="modal-header">
       <h3><i data-lucide="radar" class="w-5 h-5 inline mr-2"></i>Network Discovery</h3>
-      <button data-close-modal="discovery-modal" class="text-slate-400 hover:text-white">
+      <button data-close-modal="discovery-modal" class="text-slate-400 hover:text-ink">
         <i data-lucide="x" class="w-5 h-5"></i>
       </button>
     </div>
@@ -274,7 +275,7 @@
   <div class="modal">
     <div class="modal-header">
       <h3 id="node-modal-title"><i data-lucide="edit" class="w-5 h-5 inline mr-2"></i>Edit Node</h3>
-      <button data-close-modal="node-modal" class="text-slate-400 hover:text-white">
+      <button data-close-modal="node-modal" class="text-slate-400 hover:text-ink">
         <i data-lucide="x" class="w-5 h-5"></i>
       </button>
     </div>
@@ -514,13 +515,13 @@
   <div class="modal" style="width: 720px;">
     <div class="modal-header">
       <h3><i data-lucide="route" class="w-5 h-5 inline mr-2"></i><span id="traceroute-title">Traceroute</span></h3>
-      <button data-close-modal="traceroute-modal" class="text-slate-400 hover:text-white">
+      <button data-close-modal="traceroute-modal" class="text-slate-400 hover:text-ink">
         <i data-lucide="x" class="w-5 h-5"></i>
       </button>
     </div>
     <div class="modal-body">
       <p id="traceroute-status" class="text-xs text-slate-400 mb-2"></p>
-      <pre id="traceroute-output" class="text-xs font-mono whitespace-pre overflow-auto p-3 rounded" style="max-height: 60vh; background: rgba(0,0,0,0.3); color: var(--text-primary);"></pre>
+      <pre id="traceroute-output" class="text-xs font-mono whitespace-pre overflow-auto p-3 rounded" style="max-height: 60vh; background: var(--terminal); color: #e8e8e8;"></pre>
     </div>
   </div>
 </div>

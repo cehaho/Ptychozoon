@@ -18,7 +18,7 @@ function scene() {
         name: '<b>R&"c"</b>',
         address: '10.0.0.1',
         cell: 'B4',
-        status: { color: '#16a34a', label: 'ONLINE', short: 'ON' },
+        status: { color: '#5fb85a', label: 'ONLINE', short: 'ON' },
         icon: {
           kind: 'svg',
           tree: {
@@ -70,7 +70,7 @@ function scene() {
         name: 'Proxmox <host>',
         typeLabel: 'Proxmox',
         count: '1 node',
-        status: { color: '#94a3b8', label: 'UNKNOWN' },
+        status: { color: '#8a8a8a', label: 'UNKNOWN' },
         icon: null,
         zones: [
           {
@@ -80,7 +80,7 @@ function scene() {
             height: 120,
             name: 'Lab',
             badge: 'VLAN 10',
-            color: '#3b82f6',
+            color: '#4d9fea',
             count: '1 node'
           }
         ],
@@ -92,14 +92,14 @@ function scene() {
             height: 40,
             name: 'vm1',
             address: '10.0.0.5',
-            status: { color: '#16a34a', short: 'ON' }
+            status: { color: '#5fb85a', short: 'ON' }
           }
         ]
       }
     ],
     links: [
-      { d: 'M 170 340 C 170 400, 670 440, 670 500', color: '#16a34a', opacity: '0.45', dash: null },
-      { d: 'M0 0 L10 10" onload="x', color: '#16a34a' }
+      { d: 'M 170 340 C 170 400, 670 440, 670 500', color: '#5fb85a', opacity: '0.45', dash: null },
+      { d: 'M0 0 L10 10" onload="x', color: '#5fb85a' }
     ],
     linkLabels: [
       {
@@ -110,7 +110,7 @@ function scene() {
         textX: 435,
         textY: 424,
         text: 'fiber <10G>',
-        color: '#16a34a'
+        color: '#5fb85a'
       }
     ]
   };
@@ -149,7 +149,7 @@ test('the output has no script, event handler, external reference or foreignObje
   assert.ok(!/style="/i.test(svg), 'no inline style attribute from icons');
   assert.ok(svg.includes('<path d="M3 12h18"/>'), 'the icon path is kept');
   assert.ok(!svg.includes('M0 0 L10 10'), 'a tampered link path is dropped');
-  assert.ok(svg.includes('stroke="#0f172a"'), 'currentColor becomes the theme text colour');
+  assert.ok(svg.includes('stroke="#292724"'), 'currentColor becomes the theme text colour');
   assert.ok(!/red;stroke/.test(svg), 'an unsafe colour falls back');
 });
 

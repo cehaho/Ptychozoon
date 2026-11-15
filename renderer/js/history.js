@@ -165,8 +165,8 @@
   function sparklineSvg(samples, options) {
     const opts = options || {};
     const line = sparkline(samples, opts);
-    const stroke = opts.stroke || '#38bdf8';
-    const fail = opts.failColor || '#ef4444';
+    const stroke = opts.stroke || '#4d9fea';
+    const fail = opts.failColor || '#e5674f';
     const marks = line.failures
       .map(
         (x) =>

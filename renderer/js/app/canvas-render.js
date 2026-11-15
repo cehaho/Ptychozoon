@@ -87,8 +87,8 @@ export function statusView(status) {
       label: 'ONLINE',
       short: 'ON',
       className: 'online',
-      color: '#16a34a',
-      background: 'rgba(34,197,94,0.06)',
+      color: 'var(--green)',
+      background: 'var(--green-soft)',
       dot: 'bg-green-500',
       text: 'text-green-400'
     };
@@ -99,9 +99,9 @@ export function statusView(status) {
       label: 'OFFLINE',
       short: 'OFF',
       className: 'offline',
-      color: '#ef4444',
-      background: 'rgba(239,68,68,0.06)',
-      dot: 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.6)]',
+      color: 'var(--red)',
+      background: 'var(--red-soft)',
+      dot: 'bg-red-500',
       text: 'text-red-400 font-bold'
     };
   }
@@ -110,8 +110,8 @@ export function statusView(status) {
     label: 'UNKNOWN',
     short: '…',
     className: 'unknown',
-    color: '#94a3b8',
-    background: 'rgba(148,163,184,0.08)',
+    color: 'var(--faint)',
+    background: 'var(--soft)',
     dot: 'bg-slate-400',
     text: 'text-slate-400'
   };
@@ -338,7 +338,7 @@ export function renderTree(nodes) {
             <div class="vlan-zone">
               <div class="vlan-zone-header">
                 <div class="vlan-zone-header-left">
-                  <span class="vlan-zone-badge" style="background: rgba(100,100,100,0.2); color: #888;">
+                  <span class="vlan-zone-badge" style="background: var(--soft); color: var(--faint);">
                     DEFAULT
                   </span>
                   <span class="vlan-zone-name">Unassigned</span>
@@ -480,14 +480,14 @@ export function renderTree(nodes) {
     el.innerHTML = `
       ${portsHtml}
       <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; gap:6px; padding:10px; box-sizing:border-box;">
-        <div style="width:48px; height:48px; border-radius:999px; display:flex; align-items:center; justify-content:center; background: rgba(0,0,0,0.15); border:1px solid rgba(255,255,255,0.03); overflow:hidden;">
+        <div style="width:48px; height:48px; border-radius:999px; display:flex; align-items:center; justify-content:center; background: var(--soft); border:1px solid var(--border); color: var(--muted); overflow:hidden;">
           ${iconHtml}
         </div>
-        <div style="text-align:center; width:100%; color:#e6eef8;">
+        <div style="text-align:center; width:100%; color:var(--text);">
           <div style="font-weight:700; font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${escapeHtml(node.name || node.id)}</div>
-          <div style="font-size:11px; color:var(--muted); font-family:monospace;">${escapeHtml(node.address || '')}</div>
-          <div style="font-size:9px; color:#475569; font-family:monospace;">${gridCell.col}${gridCell.row}</div>
-          <div style="margin-top:6px; font-size:10px; padding:4px 6px; border-radius:999px; display:inline-block; color:${view.color}; background:${view.background}; border:1px solid rgba(255,255,255,0.02); font-weight:700; letter-spacing:0.6px;">
+          <div style="font-size:11px; color:var(--muted); font-family:var(--font-mono); font-variant-numeric:tabular-nums;">${escapeHtml(node.address || '')}</div>
+          <div style="font-size:9px; color:var(--faint); font-family:var(--font-mono);">${gridCell.col}${gridCell.row}</div>
+          <div style="margin-top:6px; font-size:10px; padding:4px 6px; border-radius:999px; display:inline-block; color:${view.color}; background:${view.background}; font-weight:700; letter-spacing:0.05em;">
             ${statusLabel(node, statusById, view)}
           </div>
         </div>

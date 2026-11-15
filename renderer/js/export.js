@@ -18,37 +18,37 @@
   const PADDING = 40;
   const MAX_CANVAS_SIDE = 16384;
   const MAX_CANVAS_AREA = 16384 * 8192;
-  const FONT = 'Inter, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif';
+  const FONT = '-apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif';
   const MONO = 'ui-monospace, SFMono-Regular, Menlo, Consolas, monospace';
 
   const THEMES = {
     dark: {
-      background: '#0f172a',
+      background: '#1a1a1a',
       grid: '#ffffff',
       gridOpacity: '0.03',
-      card: '#1e293b',
-      cardStroke: '#334155',
-      iconBg: '#0f172a',
-      text: '#f8fafc',
-      muted: '#94a3b8',
-      faint: '#475569',
-      labelBg: '#0f172a',
-      labelText: '#e2e8f0',
-      row: '#0f172a'
+      card: '#282828',
+      cardStroke: '#3d3d3d',
+      iconBg: '#1a1a1a',
+      text: '#e8e8e8',
+      muted: '#b0b0b0',
+      faint: '#6e6e6e',
+      labelBg: '#212121',
+      labelText: '#e8e8e8',
+      row: '#212121'
     },
     light: {
-      background: '#f8fafc',
+      background: '#f5f4f2',
       grid: '#000000',
       gridOpacity: '0.05',
       card: '#ffffff',
-      cardStroke: '#cbd5e1',
-      iconBg: '#f1f5f9',
-      text: '#0f172a',
-      muted: '#475569',
-      faint: '#94a3b8',
+      cardStroke: '#e3e1dd',
+      iconBg: '#efedea',
+      text: '#292724',
+      muted: '#6d6963',
+      faint: '#a19d97',
       labelBg: '#ffffff',
-      labelText: '#1e293b',
-      row: '#f1f5f9'
+      labelText: '#292724',
+      row: '#efedea'
     }
   };
 
@@ -81,7 +81,7 @@
   function safeColor(color, fallback) {
     const text = String(color || '').trim();
     if (HEX.test(text) || RGB.test(text)) return text;
-    return fallback || '#64748b';
+    return fallback || '#8a8a8a';
   }
 
   function truncate(text, maxChars) {
@@ -409,7 +409,7 @@
   function statusOf(item) {
     const status = item && item.status ? item.status : {};
     return {
-      color: safeColor(status.color, '#94a3b8'),
+      color: safeColor(status.color, '#8a8a8a'),
       label: String(status.label || ''),
       short: String(status.short || status.label || '')
     };
@@ -510,7 +510,7 @@
       );
     }
     (container.zones || []).forEach((zone) => {
-      const color = safeColor(zone.color, '#64748b');
+      const color = safeColor(zone.color, '#8a8a8a');
       out += rect(
         zone,
         ' rx="8" fill="' +
@@ -579,7 +579,7 @@
   function renderLink(link) {
     const d = String(link.d || '');
     if (!validPath(d)) return '';
-    const color = safeColor(link.color, '#94a3b8');
+    const color = safeColor(link.color, '#8a8a8a');
     let attrs = ' fill="none" stroke="' + color + '" stroke-width="2" stroke-linecap="round"';
     attrs += ' stroke-opacity="' + num(link.opacity, 0.75) + '"';
     if (link.dash && /^[\d.\s,]+$/.test(String(link.dash)))
@@ -588,7 +588,7 @@
   }
 
   function renderLinkLabel(label, theme) {
-    const color = safeColor(label.color, '#94a3b8');
+    const color = safeColor(label.color, '#8a8a8a');
     const cx = label.textX !== undefined ? label.textX : num(label.x) + num(label.width) / 2;
     const cy = label.textY !== undefined ? label.textY : num(label.y) + num(label.height) / 2 + 4;
     return (

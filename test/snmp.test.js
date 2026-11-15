@@ -213,7 +213,7 @@ test('link load follows the explicit interface, then the port name', () => {
   );
   assert.equal(byPort.index, 1);
   assert.equal(byPort.utilization, 0.7);
-  assert.equal(SnmpUI.loadStyle(byPort.utilization).color, '#f97316');
+  assert.equal(SnmpUI.loadStyle(byPort.utilization).color, '#e08a3c');
 
   const byName = SnmpUI.linkLoad(
     { sourceNodeId: 'host', targetNodeId: 'sw', snmpIfName: 'tengig' },
@@ -255,9 +255,9 @@ test('link load follows the explicit interface, then the port name', () => {
 
 test('load colors and widths grow with utilization', () => {
   assert.equal(SnmpUI.loadStyle(null), null);
-  assert.deepEqual(SnmpUI.loadStyle(0.1), { color: '#22c55e', width: 3 });
-  assert.deepEqual(SnmpUI.loadStyle(0.5), { color: '#eab308', width: 5 });
-  assert.deepEqual(SnmpUI.loadStyle(2), { color: '#ef4444', width: 8 });
+  assert.deepEqual(SnmpUI.loadStyle(0.1), { color: '#5fb85a', width: 3 });
+  assert.deepEqual(SnmpUI.loadStyle(0.5), { color: '#c9a227', width: 5 });
+  assert.deepEqual(SnmpUI.loadStyle(2), { color: '#e5674f', width: 8 });
 });
 
 test('tooltip lists system info and busiest interfaces', () => {

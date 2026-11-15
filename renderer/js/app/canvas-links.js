@@ -137,7 +137,7 @@ export function drawLines() {
       textBg.setAttribute('width', box.width);
       textBg.setAttribute('height', box.height);
       textBg.setAttribute('rx', 4);
-      textBg.setAttribute('fill', 'rgba(15, 23, 42, 0.9)');
+      textBg.setAttribute('fill', 'rgba(26, 26, 26, 0.92)');
       textBg.setAttribute('stroke', baseColor);
       textBg.setAttribute('stroke-width', '1');
       svg.appendChild(textBg);
@@ -146,7 +146,7 @@ export function drawLines() {
       text.setAttribute('x', box.textX);
       text.setAttribute('y', box.textY);
       text.setAttribute('text-anchor', 'middle');
-      text.setAttribute('fill', '#e2e8f0');
+      text.setAttribute('fill', '#e8e8e8');
       text.setAttribute('font-size', '10');
       text.setAttribute('font-family', 'monospace');
       text.setAttribute('font-weight', 'bold');
