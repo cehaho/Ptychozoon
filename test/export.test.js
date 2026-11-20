@@ -229,6 +229,58 @@ test('backup flows keep their arrow, colour and caption', () => {
   );
 });
 
+test('the flow collection reads the canvas layers and drops a broken arrow', () => {
+  function fakeEl(attrs, found) {
+    return {
+      attrs: attrs || {},
+      found: found || {},
+      textContent: '',
+      getAttribute(name) {
+        return this.attrs[name] === undefined ? null : this.attrs[name];
+      },
+      querySelector(selector) {
+        return this.found[selector] || null;
+      },
+      querySelectorAll(selector) {
+        return this.found[selector] || [];
+      }
+    };
+  }
+
+  const arrow = fakeEl({
+    d: 'M 0 0 Q 50 -30 100 0',
+    stroke: '#5fb85a',
+    'stroke-dasharray': '1 6'
+  });
+  const broken = fakeEl({ d: 'M0 0 L10 10" onload="x', stroke: '#e5674f' });
+  const layer = fakeEl(
+    {},
+    {
+      'g.flow-group': [fakeEl({}, { '.flow-path': arrow }), fakeEl({}, { '.flow-path': broken })]
+    }
+  );
+  const bg = fakeEl({ x: '10', y: '20', width: '90', height: '18', stroke: '#e08a3c' });
+  const label = fakeEl({ x: '55', y: '33' });
+  label.textContent = 'Backup <nightly> · 2 h ago';
+  const overlay = fakeEl({}, { 'g.flow-caption': [fakeEl({}, { rect: bg, text: label })] });
+
+  const collected = Export.collectFlows(layer, overlay);
+  assert.deepEqual(collected.flows, [{ d: 'M 0 0 Q 50 -30 100 0', color: '#5fb85a', dash: '1 6' }]);
+  assert.deepEqual(collected.flowLabels, [
+    {
+      x: 10,
+      y: 20,
+      width: 90,
+      height: 18,
+      color: '#e08a3c',
+      textX: 55,
+      textY: 33,
+      text: 'Backup <nightly> · 2 h ago'
+    }
+  ]);
+  assert.deepEqual(Export.collectFlows(null, null), { flows: [], flowLabels: [] });
+});
+
 test('the viewBox covers backup flow arrows and captions', () => {
   const bounds = Export.computeBounds(
     {
