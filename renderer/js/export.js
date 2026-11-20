@@ -295,9 +295,16 @@
     (s.nodes || []).forEach(addBox);
     (s.containers || []).forEach(addBox);
     (s.linkLabels || []).forEach(addBox);
+    (s.flowLabels || []).forEach(addBox);
     (s.links || []).forEach((link) => {
       if (!validPath(link.d)) return;
       pathPoints(link.d).forEach((point) =>
+        addBox({ x: point.x, y: point.y, width: 0, height: 0 })
+      );
+    });
+    (s.flows || []).forEach((flow) => {
+      if (!validPath(flow.d)) return;
+      pathPoints(flow.d).forEach((point) =>
         addBox({ x: point.x, y: point.y, width: 0, height: 0 })
       );
     });
@@ -369,6 +376,11 @@
       '.link-label{font-family:' +
       MONO +
       ';font-weight:700;font-size:10px;fill:' +
+      theme.labelText +
+      ';}' +
+      '.flow-label{font-family:' +
+      MONO +
+      ';font-size:10px;fill:' +
       theme.labelText +
       ';}' +
       '.icon-letter{font-weight:700;}' +
@@ -603,6 +615,56 @@
     );
   }
 
+  // Arrow head for a backup flow, one marker per flow (they may share a
+  // colour, so the id carries the flow index).
+  function flowMarker(index, color) {
+    return (
+      '<marker id="flow-arrow-' +
+      index +
+      '" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">' +
+      '<path d="M 0 0 L 10 5 L 0 10 z" fill="' +
+      color +
+      '"/>' +
+      '</marker>'
+    );
+  }
+
+  // A backup flow: the same dotted, coloured arrow as on the canvas. The
+  // marching animation of the canvas has no place in a still image.
+  function renderFlow(flow, index) {
+    const d = String(flow.d || '');
+    if (!validPath(d)) return '';
+    const color = safeColor(flow.color, '#8a8a8a');
+    const dash = /^[\d.\s,]+$/.test(String(flow.dash || '')) ? String(flow.dash) : '1 6';
+    return (
+      '<path d="' +
+      escapeXml(d) +
+      '" fill="none" stroke="' +
+      color +
+      '" stroke-width="2" stroke-linecap="round" stroke-opacity="0.9" stroke-dasharray="' +
+      escapeXml(dash) +
+      '" marker-end="url(#flow-arrow-' +
+      index +
+      ')"/>'
+    );
+  }
+
+  function renderFlowLabel(label, theme) {
+    const color = safeColor(label.color, '#8a8a8a');
+    const cx = label.textX !== undefined ? label.textX : num(label.x) + num(label.width) / 2;
+    const cy = label.textY !== undefined ? label.textY : num(label.y) + num(label.height) / 2 + 3.5;
+    return (
+      rect(
+        label,
+        ' rx="3" fill="' +
+          theme.labelBg +
+          '" fill-opacity="0.95" stroke="' +
+          color +
+          '" stroke-width="1"'
+      ) + text(cx, cy, label.text, ' class="flow-label" text-anchor="middle"')
+    );
+  }
+
   function grid(bounds, theme) {
     const step = 100;
     let d = '';
@@ -657,11 +719,23 @@
       '<g class="link-labels">' +
       (s.linkLabels || []).map((label) => renderLinkLabel(label, theme)).join('') +
       '</g>';
+    const flows = s.flows || [];
+    if (flows.length) {
+      out +=
+        '<defs>' +
+        flows.map((flow, index) => flowMarker(index, safeColor(flow.color, '#8a8a8a'))).join('') +
+        '</defs>';
+    }
+    out += '<g class="flows">' + flows.map(renderFlow).join('') + '</g>';
     out +=
       '<g class="containers">' +
       (s.containers || []).map((c) => renderContainer(c, theme)).join('') +
       '</g>';
     out += '<g class="nodes">' + (s.nodes || []).map((n) => renderNode(n, theme)).join('') + '</g>';
+    out +=
+      '<g class="flow-labels">' +
+      (s.flowLabels || []).map((label) => renderFlowLabel(label, theme)).join('') +
+      '</g>';
     out += '</svg>\n';
     return { svg: out, width: bounds.width, height: bounds.height, bounds: bounds };
   }
@@ -697,7 +771,8 @@
     const doc = deps.document || document;
     const world = doc.getElementById('world');
     const layer = doc.getElementById('connections-layer');
-    if (!world) return { nodes: [], containers: [], links: [], linkLabels: [] };
+    if (!world)
+      return { nodes: [], containers: [], links: [], linkLabels: [], flows: [], flowLabels: [] };
     const worldRect = world.getBoundingClientRect();
     const zoom = world.offsetWidth > 0 ? worldRect.width / world.offsetWidth || 1 : 1;
     function boxOf(el) {
@@ -723,7 +798,14 @@
 
     const all = deps.nodes || [];
     const byId = new Map(all.map((node) => [node.id, node]));
-    const scene = { nodes: [], containers: [], links: [], linkLabels: [] };
+    const scene = {
+      nodes: [],
+      containers: [],
+      links: [],
+      linkLabels: [],
+      flows: [],
+      flowLabels: []
+    };
 
     all.forEach((node) => {
       if (node.containerId && !node.isContainer) return;
@@ -818,6 +900,38 @@
           label.textY = Number(el.getAttribute('y'));
           label = null;
         }
+      });
+    }
+
+    // Backup flow arrows sit in the links layer; their captions sit in the
+    // layer above the nodes. Flows hidden on the canvas are simply absent.
+    if (layer) {
+      Array.from(layer.querySelectorAll('g.flow-group')).forEach((el) => {
+        const path = el.querySelector('.flow-path');
+        if (!path || !validPath(path.getAttribute('d'))) return;
+        scene.flows.push({
+          d: path.getAttribute('d'),
+          color: path.getAttribute('stroke'),
+          dash: path.getAttribute('stroke-dasharray')
+        });
+      });
+    }
+    const overlay = doc.getElementById('flows-label-layer');
+    if (overlay) {
+      Array.from(overlay.querySelectorAll('g.flow-caption')).forEach((el) => {
+        const bg = el.querySelector('rect');
+        const label = el.querySelector('text');
+        if (!bg || !label) return;
+        scene.flowLabels.push({
+          x: Number(bg.getAttribute('x')),
+          y: Number(bg.getAttribute('y')),
+          width: Number(bg.getAttribute('width')),
+          height: Number(bg.getAttribute('height')),
+          color: bg.getAttribute('stroke'),
+          textX: Number(label.getAttribute('x')),
+          textY: Number(label.getAttribute('y')),
+          text: label.textContent
+        });
       });
     }
     return scene;

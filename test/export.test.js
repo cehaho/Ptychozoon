@@ -193,6 +193,53 @@ test('icon sanitiser keeps only drawing elements', () => {
   );
 });
 
+test('backup flows keep their arrow, colour and caption', () => {
+  const flowScene = {
+    nodes: scene().nodes,
+    flows: [
+      { d: 'M 100 100 Q 200 20 300 100', color: '#5fb85a' },
+      { d: 'M 0 0 L10 10" onload="x', color: '#5fb85a' }
+    ],
+    flowLabels: [
+      {
+        x: 180,
+        y: 40,
+        width: 90,
+        height: 18,
+        textX: 225,
+        textY: 53,
+        text: 'Backup <nightly> · 2 h ago',
+        color: '#e08a3c'
+      }
+    ]
+  };
+  const { svg } = Export.buildSvg(flowScene, { theme: 'dark' });
+  assert.match(svg, /<g class="flows">/);
+  assert.match(svg, /<marker id="flow-arrow-0"[^>]*viewBox="0 0 10 10"/);
+  assert.match(svg, /stroke-dasharray="1 6" marker-end="url\(#flow-arrow-0\)"/);
+  assert.ok(!svg.includes('L10 10'), 'a tampered flow path is dropped');
+  assert.match(svg, /class="flow-label"[^>]*>Backup &lt;nightly&gt; · 2 h ago<\/text>/);
+  assert.ok(
+    svg.indexOf('<g class="flows">') < svg.indexOf('<g class="nodes">'),
+    'arrows stay under the cards'
+  );
+  assert.ok(
+    svg.indexOf('<g class="flow-labels">') > svg.indexOf('<g class="nodes">'),
+    'captions stay above the cards'
+  );
+});
+
+test('the viewBox covers backup flow arrows and captions', () => {
+  const bounds = Export.computeBounds(
+    {
+      flows: [{ d: 'M 0 0 Q 50 -40 100 0' }],
+      flowLabels: [{ x: 10, y: -60, width: 40, height: 18 }]
+    },
+    10
+  );
+  assert.deepEqual(bounds, { x: -10, y: -70, width: 120, height: 80 });
+});
+
 test('PNG size honours the scale and the canvas limits', () => {
   assert.deepEqual(Export.pngSize(800, 600, 2), { width: 1600, height: 1200, scale: 2 });
   assert.deepEqual(Export.pngSize(800, 600, 1), { width: 800, height: 600, scale: 1 });
