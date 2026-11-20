@@ -2,7 +2,7 @@
 //
 // Keep this aligned with src-tauri/src/topology.rs. Both sides accept the
 // legacy file (parent ids, `connections`) and write the same object:
-// schemaVersion, settings, nodes, links, ports.
+// schemaVersion, settings, nodes, links, ports, flows.
 (function (root, factory) {
   const api = factory();
   if (typeof module === 'object' && module.exports) {
@@ -13,7 +13,7 @@
   'use strict';
 
   const SCHEMA_VERSION = 1;
-  const DOCUMENT_KEYS = ['schemaVersion', 'settings', 'nodes', 'links', 'ports'];
+  const DOCUMENT_KEYS = ['schemaVersion', 'settings', 'nodes', 'links', 'ports', 'flows'];
   const RUNTIME_FIELDS = [
     'status',
     'uptime',
@@ -30,7 +30,8 @@
       settings: defaultSettings(),
       nodes: [],
       links: [],
-      ports: []
+      ports: [],
+      flows: []
     };
   }
 
@@ -65,6 +66,15 @@
       return require('./probe-checks.js');
     }
     return globalThis.ProbeChecks || null;
+  }
+
+  // Backup flows live in flows.js (loaded before this file). Without it
+  // (a page that does not load it), the flows are kept as they are.
+  function flowsModule() {
+    if (typeof module === 'object' && module.exports && typeof require === 'function') {
+      return require('./flows.js');
+    }
+    return globalThis.Flows || null;
   }
 
   function probeError(nodes) {
@@ -113,6 +123,8 @@
       return 'Configuration ports must be an array';
     const links = [].concat(raw.links || [], raw.connections || []);
     if (!links.every(isObject)) return 'Configuration links must be objects';
+    const flows = flowsModule();
+    if (flows) return flows.flowsError(raw.flows);
     return '';
   }
 
@@ -205,6 +217,15 @@
     if (!isObject(raw) || !Array.isArray(raw.ports) || !portsMatch(ports, raw.ports))
       changed = true;
 
+    const rawFlows = isObject(raw) && Array.isArray(raw.flows) ? raw.flows : [];
+    const flowsApi = flowsModule();
+    const flows = flowsApi
+      ? flowsApi.normalizeFlows(rawFlows, new Set(nodes.map((node) => node.id)))
+      : clone(rawFlows);
+    if (!isObject(raw) || JSON.stringify(flows) !== JSON.stringify(raw.flows || [])) {
+      changed = true;
+    }
+
     return {
       changed: changed,
       document: {
@@ -212,7 +233,8 @@
         settings: settings,
         nodes: nodes,
         links: links,
-        ports: ports
+        ports: ports,
+        flows: flows
       }
     };
   }
@@ -779,14 +801,23 @@
 
   function importMessage(doc) {
     const counts = summary(doc);
-    return (
+    const flows = doc && Array.isArray(doc.flows) ? doc.flows : [];
+    const commands = flows.filter((flow) => flow.check && flow.check.type === 'command').length;
+    let message =
       'Replace the current topology?\n\nNodes: ' +
       counts.nodes +
       '\nLinks: ' +
       counts.links +
+      (flows.length ? '\nBackup flows: ' + flows.length : '') +
       '\nVersion: ' +
-      counts.schemaVersion
-    );
+      counts.schemaVersion;
+    if (commands) {
+      message +=
+        '\n\n' +
+        commands +
+        ' backup check(s) run a command over SSH. They will not run until you open each flow and save it on this computer.';
+    }
+    return message;
   }
 
   return {

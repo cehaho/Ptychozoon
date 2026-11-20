@@ -13,6 +13,7 @@ import { closeMinimap, initMinimap, toggleMinimap, updateMinimap } from './minim
 import { refreshHostList } from './host-list.js';
 import { clearSelection } from './selection.js';
 import { redo, undo } from './undo.js';
+import { bindFlowControls } from './flows-ui.js';
 import { deleteSelectedConnection, startConnection, startNodeDrag } from './canvas-edit.js';
 import {
   autoLayoutNodes,
@@ -289,6 +290,7 @@ function setupEventListeners() {
   bindDiscoveryControls();
   bindNodeForm();
   bindContextMenu();
+  bindFlowControls();
 
   // Search and filter
   document.getElementById('node-search').addEventListener('input', refreshHostList);

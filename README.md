@@ -14,6 +14,7 @@ Dessinez votre réseau, voyez en direct quels équipements répondent, et ouvrez
 - **Supervision** : ping, ports TCP, HTTP(S) et DNS, avec confirmation sur deux mesures, latence, historique et notifications système.
 - **Découverte** : balayage d’une plage IPv4, table ARP et voisins IPv6, nom DNS et fabricant de chaque hôte.
 - **SNMP v2c** : état des interfaces et charge des liens.
+- **Flux de backup** : flèches de la machine sauvegardée vers sa copie, vertes, orange (en retard) ou rouges (en échec) selon la date du dernier backup, lue par SSH (dossier ou commande) ou HTTP.
 - **SSH** : terminal intégré, mot de passe ou clé, vérification des clés d’hôte.
 - **Actions rapides** : copier l’adresse, ouvrir l’interface web, traceroute, Wake-on-LAN.
 - **Recherche** (`Ctrl+F`), export PNG / SVG, import / export JSON, thèmes sombre et clair.

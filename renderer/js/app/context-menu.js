@@ -12,6 +12,7 @@ import { saveStateForUndo } from './undo.js';
 import { historyLabel, historyWhen, statusHistory } from './monitoring.js';
 import { openSSHModal } from './ssh.js';
 import { openNodeModal } from './node-form.js';
+import { openFlowEditor } from './flows-ui.js';
 
 let contextMenuNode = null;
 
@@ -94,6 +95,13 @@ function editNodeFromContext() {
   if (!node) return;
   hideContextMenu();
   openNodeModal(node);
+}
+
+function newFlowFromContext() {
+  const node = contextMenuNode;
+  if (!node) return;
+  hideContextMenu();
+  openFlowEditor(null, { sourceNodeId: node.id });
 }
 
 async function pingNodeFromContext() {
@@ -256,6 +264,7 @@ export function bindContextMenu() {
   const contextActions = {
     ssh: openSSHFromContext,
     edit: editNodeFromContext,
+    'new-flow': newFlowFromContext,
     ping: pingNodeFromContext,
     traceroute: tracerouteFromContext,
     'copy-address': copyAddressFromContext,

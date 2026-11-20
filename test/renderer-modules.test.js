@@ -23,6 +23,7 @@ const source = (file) => fs.readFileSync(path.join(appDir, file), 'utf8');
 const LIBRARIES = [
   'dialog.js',
   'probe-checks.js',
+  'flows.js',
   'topology.js',
   'hosts.js',
   'probe.js',
@@ -162,7 +163,7 @@ test('every data-action, data-context-action and data-close-modal of index.html 
   );
   const menu = source('context-menu.js');
   const entries = [...html.matchAll(/data-context-action="([^"]+)"/g)].map((match) => match[1]);
-  assert.equal(entries.length, 11);
+  assert.equal(entries.length, 12);
   entries.forEach((name) => {
     const key = /^[a-z]+$/.test(name) ? name + ':' : "'" + name + "':";
     assert.ok(menu.includes(key), 'data-context-action ' + name);

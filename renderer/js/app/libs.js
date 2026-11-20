@@ -8,6 +8,7 @@ export const Topology = g.Topology;
 export const Hosts = g.Hosts;
 export const Probe = g.Probe;
 export const Alerts = g.Alerts;
+export const Flows = g.Flows;
 export const TopologyCanvas = g.TopologyCanvas;
 export const NodeSearch = g.NodeSearch;
 export const TopologyExport = g.TopologyExport;

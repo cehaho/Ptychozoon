@@ -1,4 +1,4 @@
-// Undo/redo of node and link edits (secrets are never kept in the stacks).
+// Undo/redo of node, link and backup flow edits (secrets are never kept in the stacks).
 
 import { Topology } from './libs.js';
 import { state } from './state.js';
@@ -24,7 +24,8 @@ export function saveStateForUndo(actionName = 'Change') {
     action: actionName,
     timestamp: Date.now(),
     nodes: cloneNodesWithoutSecrets(state.config.nodes),
-    links: JSON.parse(JSON.stringify(state.config.links))
+    links: JSON.parse(JSON.stringify(state.config.links)),
+    flows: JSON.parse(JSON.stringify(state.config.flows || []))
   };
 
   undoStack.push(snapshot);
@@ -51,7 +52,8 @@ export function undo() {
     action: 'Current',
     timestamp: Date.now(),
     nodes: cloneNodesWithoutSecrets(state.config.nodes),
-    links: JSON.parse(JSON.stringify(state.config.links))
+    links: JSON.parse(JSON.stringify(state.config.links)),
+    flows: JSON.parse(JSON.stringify(state.config.flows || []))
   };
   redoStack.push(currentState);
 
@@ -59,6 +61,7 @@ export function undo() {
   const previousState = undoStack.pop();
   state.config.nodes = previousState.nodes;
   state.config.links = previousState.links;
+  if (previousState.flows) state.config.flows = previousState.flows;
 
   // Re-render
   renderTree(state.config.nodes);
@@ -81,7 +84,8 @@ export function redo() {
     action: 'Current',
     timestamp: Date.now(),
     nodes: cloneNodesWithoutSecrets(state.config.nodes),
-    links: JSON.parse(JSON.stringify(state.config.links))
+    links: JSON.parse(JSON.stringify(state.config.links)),
+    flows: JSON.parse(JSON.stringify(state.config.flows || []))
   };
   undoStack.push(currentState);
 
@@ -89,6 +93,7 @@ export function redo() {
   const nextState = redoStack.pop();
   state.config.nodes = nextState.nodes;
   state.config.links = nextState.links;
+  if (nextState.flows) state.config.flows = nextState.flows;
 
   // Re-render
   renderTree(state.config.nodes);

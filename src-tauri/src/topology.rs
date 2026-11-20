@@ -2,7 +2,7 @@
 //!
 //! Keep this aligned with `renderer/js/topology.js`. A legacy file (parent ids
 //! or `connections`) is accepted on read. The object written back is
-//! `schemaVersion`, `settings`, `nodes`, `links`, and `ports`.
+//! `schemaVersion`, `settings`, `nodes`, `links`, `ports`, and `flows`.
 
 use serde_json::{Map, Value, json};
 
@@ -24,7 +24,8 @@ pub fn empty_document() -> Value {
         "settings": default_settings(),
         "nodes": [],
         "links": [],
-        "ports": []
+        "ports": [],
+        "flows": []
     })
 }
 
@@ -83,7 +84,7 @@ fn validate_incoming(value: &Value) -> Result<(), String> {
             return Err("Configuration links must be objects".to_string());
         }
     }
-    Ok(())
+    crate::flows::check_flows(map.get("flows"))
 }
 
 fn require_array(map: &Map<String, Value>, key: &str) -> Result<(), String> {
@@ -202,12 +203,18 @@ fn migrate(value: Value) -> Value {
 
     let settings = normalize_settings(source.get("settings"));
     let ports = collect_ports(&nodes);
+    let node_ids = nodes
+        .iter()
+        .filter_map(|node| node.get("id").and_then(Value::as_str).map(str::to_string))
+        .collect();
+    let flows = crate::flows::normalize_flows(source.get("flows"), &node_ids);
     json!({
         "schemaVersion": SCHEMA_VERSION,
         "settings": settings,
         "nodes": nodes,
         "links": links,
-        "ports": ports
+        "ports": ports,
+        "flows": flows
     })
 }
 
