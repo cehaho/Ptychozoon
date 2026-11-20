@@ -4,6 +4,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('fs');
 const path = require('path');
+const { pathToFileURL } = require('url');
 const Export = require('../renderer/js/export.js');
 
 function scene() {
@@ -279,6 +280,144 @@ test('the flow collection reads the canvas layers and drops a broken arrow', () 
     }
   ]);
   assert.deepEqual(Export.collectFlows(null, null), { flows: [], flowLabels: [] });
+});
+
+test('hiding the flows keeps them out of the export', async () => {
+  const root = path.join(__dirname, '..');
+  const appDir = path.join(root, 'renderer', 'js', 'app');
+  globalThis.window = globalThis;
+  require(path.join(root, 'renderer', 'js', 'topology.js'));
+  require(path.join(root, 'renderer', 'js', 'flows.js'));
+
+  const overlay = {
+    innerHTML: 'stale caption',
+    querySelectorAll: () => []
+  };
+  const svg = {
+    children: [],
+    appendChild(child) {
+      this.children.push(child);
+    },
+    querySelectorAll: () => []
+  };
+  globalThis.document = {
+    getElementById: (id) => (id === 'flows-label-layer' ? overlay : null),
+    createElementNS: () => assert.fail('nothing is drawn while the flows are hidden'),
+    querySelectorAll: () => [],
+    addEventListener() {}
+  };
+
+  const { state } = await import(pathToFileURL(path.join(appDir, 'state.js')).href);
+  state.config = {
+    nodes: [],
+    flows: [{ id: 'f1', sourceNodeId: 'a', targetNodeId: 'b' }],
+    settings: { showFlows: false }
+  };
+  const { drawFlows } = await import(pathToFileURL(path.join(appDir, 'flows-ui.js')).href);
+  drawFlows(svg);
+
+  assert.deepEqual(svg.children, [], 'no arrow is drawn');
+  assert.equal(overlay.innerHTML, '', 'stale captions are cleared');
+  assert.deepEqual(Export.collectFlows(svg, overlay), { flows: [], flowLabels: [] });
+
+  delete globalThis.document;
+  delete globalThis.window;
+});
+
+test('showing the flows draws them and the export collects them', async () => {
+  function domNode(tag) {
+    const node = {
+      tag,
+      attrs: {},
+      classes: new Set(),
+      children: [],
+      textContent: '',
+      style: {},
+      dataset: {}
+    };
+    node.classList = {
+      add: (...names) => names.forEach((name) => node.classes.add(name))
+    };
+    node.setAttribute = (name, value) => {
+      node.attrs[name] = String(value);
+    };
+    node.getAttribute = (name) => (node.attrs[name] === undefined ? null : node.attrs[name]);
+    node.appendChild = (child) => {
+      node.children.push(child);
+      return child;
+    };
+    node.addEventListener = () => {};
+    node.querySelectorAll = (selector) =>
+      descendants(node).filter((child) => matches(child, selector));
+    node.querySelector = (selector) => node.querySelectorAll(selector)[0] || null;
+    node.getClientRects = () => [{ width: 1, height: 1 }];
+    return node;
+  }
+  function descendants(node) {
+    return node.children.flatMap((child) => [child, ...descendants(child)]);
+  }
+  function matches(node, selector) {
+    const match = selector.match(/^([a-z]*)(?:\.([\w-]+))?$/);
+    if (!match) return false;
+    return (!match[1] || node.tag === match[1]) && (!match[2] || node.classes.has(match[2]));
+  }
+
+  const root = path.join(__dirname, '..');
+  const appDir = path.join(root, 'renderer', 'js', 'app');
+  globalThis.window = globalThis;
+  require(path.join(root, 'renderer', 'js', 'topology.js'));
+  require(path.join(root, 'renderer', 'js', 'flows.js'));
+
+  const world = domNode('g');
+  world.getBoundingClientRect = () => ({ left: 0, top: 0, width: 1000, height: 1000 });
+  const nodeA = domNode('div');
+  nodeA.getBoundingClientRect = () => ({ left: 60, top: 70, width: 80, height: 60 });
+  const nodeB = domNode('div');
+  nodeB.getBoundingClientRect = () => ({ left: 260, top: 170, width: 80, height: 60 });
+  const overlay = domNode('g');
+  Object.defineProperty(overlay, 'innerHTML', {
+    get: () => '',
+    set: () => {
+      overlay.children.length = 0;
+    }
+  });
+  const svg = domNode('svg');
+  const elements = { world, 'flows-label-layer': overlay, 'node-a': nodeA, 'node-b': nodeB };
+  globalThis.document = {
+    getElementById: (id) => elements[id] || null,
+    createElementNS: (ns, tag) => domNode(tag),
+    querySelectorAll: () => [],
+    addEventListener() {}
+  };
+
+  const { state } = await import(pathToFileURL(path.join(appDir, 'state.js')).href);
+  const flow = { id: 'f1', name: 'Nightly', sourceNodeId: 'a', targetNodeId: 'b' };
+  state.scale = 1;
+  state.config = {
+    nodes: [
+      { id: 'a', name: 'Alpha' },
+      { id: 'b', name: 'Beta' }
+    ],
+    flows: [flow],
+    settings: { showFlows: true }
+  };
+  const { drawFlows } = await import(pathToFileURL(path.join(appDir, 'flows-ui.js')).href);
+  drawFlows(svg);
+
+  const expected = globalThis.Flows.arrowPath(
+    { x: 100, y: 100, width: 80, height: 60 },
+    { x: 300, y: 200, width: 80, height: 60 },
+    0
+  );
+  const collected = Export.collectFlows(svg, overlay);
+  assert.equal(svg.querySelectorAll('g.flow-group').length, 1, 'one arrow is drawn');
+  assert.equal(overlay.querySelectorAll('g.flow-caption').length, 1, 'one caption is drawn');
+  assert.deepEqual(collected.flows, [{ d: expected.d, color: '#8a8a8a', dash: '1 6' }]);
+  assert.equal(collected.flowLabels.length, 1);
+  assert.equal(collected.flowLabels[0].text, 'Nightly');
+
+  delete globalThis.document;
+  delete globalThis.window;
 });
 
 test('the viewBox covers backup flow arrows and captions', () => {
