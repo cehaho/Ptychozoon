@@ -764,6 +764,42 @@
     return svg ? { kind: 'svg', tree: iconTree(svg) } : { kind: 'letter' };
   }
 
+  // Backup flow arrows sit in the links layer; their captions sit in the
+  // layer above the nodes. A flow hidden on the canvas is simply absent.
+  function collectFlows(layer, overlay) {
+    const flows = [];
+    const flowLabels = [];
+    if (layer) {
+      Array.from(layer.querySelectorAll('g.flow-group')).forEach((el) => {
+        const path = el.querySelector('.flow-path');
+        if (!path || !validPath(path.getAttribute('d'))) return;
+        flows.push({
+          d: path.getAttribute('d'),
+          color: path.getAttribute('stroke'),
+          dash: path.getAttribute('stroke-dasharray')
+        });
+      });
+    }
+    if (overlay) {
+      Array.from(overlay.querySelectorAll('g.flow-caption')).forEach((el) => {
+        const bg = el.querySelector('rect');
+        const label = el.querySelector('text');
+        if (!bg || !label) return;
+        flowLabels.push({
+          x: Number(bg.getAttribute('x')),
+          y: Number(bg.getAttribute('y')),
+          width: Number(bg.getAttribute('width')),
+          height: Number(bg.getAttribute('height')),
+          color: bg.getAttribute('stroke'),
+          textX: Number(label.getAttribute('x')),
+          textY: Number(label.getAttribute('y')),
+          text: label.textContent
+        });
+      });
+    }
+    return { flows, flowLabels };
+  }
+
   // Measures the live canvas. deps: { document, nodes (with status),
   // statusView(status), statusLabel(node, view), containerTypeLabel(type),
   // gridCell(node) }.
@@ -903,37 +939,7 @@
       });
     }
 
-    // Backup flow arrows sit in the links layer; their captions sit in the
-    // layer above the nodes. Flows hidden on the canvas are simply absent.
-    if (layer) {
-      Array.from(layer.querySelectorAll('g.flow-group')).forEach((el) => {
-        const path = el.querySelector('.flow-path');
-        if (!path || !validPath(path.getAttribute('d'))) return;
-        scene.flows.push({
-          d: path.getAttribute('d'),
-          color: path.getAttribute('stroke'),
-          dash: path.getAttribute('stroke-dasharray')
-        });
-      });
-    }
-    const overlay = doc.getElementById('flows-label-layer');
-    if (overlay) {
-      Array.from(overlay.querySelectorAll('g.flow-caption')).forEach((el) => {
-        const bg = el.querySelector('rect');
-        const label = el.querySelector('text');
-        if (!bg || !label) return;
-        scene.flowLabels.push({
-          x: Number(bg.getAttribute('x')),
-          y: Number(bg.getAttribute('y')),
-          width: Number(bg.getAttribute('width')),
-          height: Number(bg.getAttribute('height')),
-          color: bg.getAttribute('stroke'),
-          textX: Number(label.getAttribute('x')),
-          textY: Number(label.getAttribute('y')),
-          text: label.textContent
-        });
-      });
-    }
+    Object.assign(scene, collectFlows(layer, doc.getElementById('flows-label-layer')));
     return scene;
   }
 
@@ -1088,6 +1094,7 @@
     pngSize: pngSize,
     exportFileName: exportFileName,
     buildSvg: buildSvg,
+    collectFlows: collectFlows,
     collectScene: collectScene,
     exportImage: exportImage
   };
