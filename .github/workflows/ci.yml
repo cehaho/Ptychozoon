@@ -42,5 +42,11 @@ jobs:
       - name: Lint (ESLint, Prettier, rustfmt, clippy)
         run: npm run lint
 
+      - name: Security audit (npm audit, cargo audit)
+        run: |
+          npm audit
+          cargo install cargo-audit --locked
+          cargo audit --file src-tauri/Cargo.lock
+
       - name: Tests (node --test, cargo test)
         run: npm test
