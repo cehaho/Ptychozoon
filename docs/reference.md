@@ -4,9 +4,9 @@ Détail du fonctionnement de Ptychozoon. Pour l’installation et la prise en ma
 
 ## Prérequis de compilation
 
-- Node.js 18 ou plus récent
+- Node.js 22.13 ou plus récent (version épinglée dans `.nvmrc`, utilisée par la CI)
 - npm
-- Rust stable (1.90 ou plus) et Cargo
+- Rust stable (1.90 ou plus) et Cargo ; `rust-toolchain.toml` fixe le canal stable et ses composants
 - Sous Linux : WebKitGTK 4.1 et les bibliothèques de développement GTK 3
 - Une connexion réseau uniquement pour `npm install`. L’interface ne charge rien depuis Internet : xterm (`@xterm/xterm`, `@xterm/addon-fit`) et Lucide sont copiés depuis `node_modules`, et la feuille Tailwind est compilée localement.
 
@@ -240,7 +240,7 @@ npm run format   # réécrit le JS/CSS/JSON avec Prettier et le Rust avec cargo 
 
 La configuration est dans `eslint.config.mjs` et `.prettierrc.json`. Prettier ne touche ni au HTML ni au Markdown.
 
-La CI GitHub Actions (`.github/workflows/ci.yml`) exécute `npm run lint` puis `npm test` sur Ubuntu à chaque pull request et à chaque push sur `main`.
+La CI GitHub Actions (`.github/workflows/ci.yml`) exécute `npm run lint` puis `npm test` sur Ubuntu à chaque pull request et à chaque push sur `main`. Un second job, `MSRV (Rust 1.90)`, recompile tous les cibles avec Rust 1.90 pour vérifier le `rust-version` déclaré dans `src-tauri/Cargo.toml` (le premier job utilise `stable`, épinglée par `rust-toolchain.toml`).
 
 ## Limites
 

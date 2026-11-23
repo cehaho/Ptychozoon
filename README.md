@@ -28,7 +28,7 @@ Ils ne sont pas signés : au premier lancement, Windows affiche « Windows a pro
 
 ## Compiler depuis les sources
 
-Il faut Node.js 18+, Rust stable et, sous Linux, WebKitGTK 4.1 (`sudo apt install libwebkit2gtk-4.1-dev libgtk-3-dev`).
+Il faut Node.js 22.13+, Rust stable et, sous Linux, WebKitGTK 4.1 (`sudo apt install libwebkit2gtk-4.1-dev libgtk-3-dev`).
 
 ```bash
 git clone https://github.com/cehaho/Ptychozoon.git
