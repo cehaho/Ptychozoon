@@ -1,7 +1,7 @@
 /* Design tokens: pure neutrals, one accent, four semantic colours.
    Dark is the default theme; [data-theme='light'] switches.
    --c-* are RGB triplets read by the Tailwind colour scales
-   (tailwind.config.js); the named tokens are used by app.css. */
+   (tailwind.css); the named tokens are used by app.css. */
 
 :root {
   --bg: #1a1a1a;

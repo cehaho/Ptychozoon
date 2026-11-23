@@ -45,12 +45,11 @@ fs.copyFileSync(
 );
 
 // Build only the Tailwind utilities used in renderer/ instead of the runtime Play CDN.
+// Tailwind 4 ships its CLI in a separate package; the theme lives in tailwind.css.
 execFileSync(
   process.execPath,
   [
-    requireDir('node_modules/tailwindcss/lib/cli.js'),
-    '--config',
-    path.join(root, 'tailwind.config.js'),
+    requireDir('node_modules/@tailwindcss/cli/dist/index.mjs'),
     '--input',
     path.join(root, 'tailwind.css'),
     '--output',

@@ -104,8 +104,7 @@ Un flux va de la machine sauvegardée à celle qui garde la copie (bouton **Back
 ```
 Ptychozoon/
 ├── src-tauri/              # Commandes Tauri : config, SSH, ping, scan, sondes, secrets
-├── tailwind.config.js      # Fichiers scannés par Tailwind (renderer/**/*.html, renderer/js/**/*.js, renderer/css/**/*.css)
-├── tailwind.css            # Entrée Tailwind (base, components, utilities)
+├── tailwind.css            # Entrée Tailwind : @import, @theme (couleurs, rayons, polices, tailles) et @source ./renderer
 ├── lib/hosts.js            # Réexporte renderer/js/hosts.js pour les tests Node
 ├── renderer/
 │   ├── index.html          # Fenêtre topologie (aucun script ni gestionnaire en ligne)
@@ -158,7 +157,7 @@ Ptychozoon/
 
 Les fichiers de `renderer/js/` sont des scripts classiques qui exposent chacun un global (les tests les chargent avec `require`). `index.html` les charge dans l’ordre, puis `js/app/main.js` en module ; les modules de `js/app/` s’importent entre eux et ne publient rien sur `window`. Aucune page n’ayant de script ni de gestionnaire d’événement en ligne, la CSP limite les scripts à `'self'`.
 
-`renderer/vendor/` est généré par `npm install` (script `postinstall`), puis régénéré avant `tauri dev` et `tauri build` (`beforeDevCommand` / `beforeBuildCommand`). Il n’est pas versionné. Tailwind ne génère que les classes présentes en toutes lettres dans `renderer/` : une classe construite par concaténation dans le JS doit être ajoutée au `safelist` de `tailwind.config.js`. Après une modification de classes hors `npm start`, relancer `node scripts/copy-vendor.js`.
+`renderer/vendor/` est généré par `npm install` (script `postinstall`), puis régénéré avant `tauri dev` et `tauri build` (`beforeDevCommand` / `beforeBuildCommand`). Il n’est pas versionné. Tailwind ne génère que les classes présentes en toutes lettres dans `renderer/` (déclaré par `@source` dans `tailwind.css`) : une classe construite par concaténation dans le JS doit être déclarée avec `@source inline(...)` dans `tailwind.css`. Après une modification de classes hors `npm start`, relancer `node scripts/copy-vendor.js`.
 
 ## Configuration
 
