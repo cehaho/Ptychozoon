@@ -26,7 +26,7 @@ jobs:
 
       - uses: actions/setup-node@v5
         with:
-          node-version: 22
+          node-version-file: '.nvmrc'
           cache: npm
 
       - uses: dtolnay/rust-toolchain@stable
@@ -50,3 +50,31 @@ jobs:
 
       - name: Tests (node --test, cargo test)
         run: npm test
+
+  # rust-toolchain.toml pins `stable` for the checks above; this job makes sure
+  # the `rust-version` declared in Cargo.toml still compiles what we ship.
+  msrv:
+    name: MSRV (Rust 1.90)
+    runs-on: ubuntu-24.04
+    env:
+      RUSTUP_TOOLCHAIN: 1.90.0
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: System libraries for Tauri
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libgtk-3-dev libsoup-3.0-dev \
+            libayatana-appindicator3-dev librsvg2-dev
+
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: 1.90.0
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+          key: msrv
+
+      - name: Compile every target on the declared minimum Rust version
+        run: cargo check --all-targets --manifest-path src-tauri/Cargo.toml
