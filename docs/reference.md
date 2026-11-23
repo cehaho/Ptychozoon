@@ -242,6 +242,19 @@ La configuration est dans `eslint.config.mjs` et `.prettierrc.json`. Prettier ne
 
 La CI GitHub Actions (`.github/workflows/ci.yml`) exécute `npm run lint` puis `npm test` sur Ubuntu à chaque pull request et à chaque push sur `main`. Un second job, `MSRV (Rust 1.90)`, recompile tous les cibles avec Rust 1.90 pour vérifier le `rust-version` déclaré dans `src-tauri/Cargo.toml` (le premier job utilise `stable`, épinglée par `rust-toolchain.toml`).
 
+### Avertissements `cargo audit` connus
+
+Le job « Security audit » sort en succès : `src-tauri/Cargo.lock` ne contient aucune vulnérabilité. Six avertissements sont malgré tout listés. État amont relevé le 23 novembre 2026 avec `cargo tree -i`, les pages docs.rs et le RustSec Advisory Database : aucun n'est encore corrigeable par une simple mise à jour de `src-tauri/Cargo.toml`. Deux attendent une nouvelle version de `tao`/`muda` (donc de Tauri), trois une publication du store `keyring` et des plugins Tauri, un celle de `russh-util`. Les dates (plannings des flux, horodatages) passent par `jiff`, qui lit les dates sans décalage dans la zone système et résout l'heure d'été à la manière de `Disambiguation::Compatible` : l'instant le plus tôt dans le repli d'automne, un décalage vers l'avant dans le saut de printemps.
+
+| Avis | Crate | Tiré par | Pourquoi il reste |
+| --- | --- | --- | --- |
+| RUSTSEC-2026-0543 (non maintenu) | `chrono` 0.4.45 | `russh-util` 0.52 ← `russh` (SSH) | notre code ne l'utilise plus (`jiff`) ; `russh-util` ne le tire que pour `cfg(target_arch = "wasm32")`, donc jamais compilé ici ; le correctif (remplacement par `web-time`, PR #825) est mergé sur `main` depuis le 21 novembre 2026 mais pas publié — la prochaine version de `russh-util` puis `cargo update` suffiront |
+| RUSTSEC-2024-0370 (non maintenu) | `proc-macro-error` 1.0.4 | `glib-macros` ← `glib` 0.18 ← `gtk` 0.18 ← `muda`, `tao` | aucune version corrigée n'existe (crate abandonnée, « no patched versions ») ; uniquement à la compilation ; disparaîtra quand `tao` et `muda` passeront à `gtk` 0.19 |
+| RUSTSEC-2026-0370 / 0371 / 0372 (non maintenus) | `zvariant`, `zbus_names`, `zvariant_derive` 5.15 | `zbus` 5.19 ← `secret-service` 5.2, `tauri-plugin-notification` 2.8.1, `tauri-plugin-opener` 2.7.3, `zbus-secret-service-keyring-store` 1.0.1 | les trois crates sont fusionnées dans `zbus` 6 ; `secret-service` 6.0.0 (22 novembre 2026) l'utilise déjà, mais `zbus-secret-service-keyring-store` 1.0.1 exige encore `secret-service ^5` et les deux plugins Tauri 2.x déclarent `zbus ^5` ; `notify-rust` tire déjà `zbus` 6 dans le même build, les deux majeures cohabitent |
+| RUSTSEC-2024-0429 (unsound) | `glib` 0.18.5 | `gtk` 0.18 ← `muda`, `tao` | corrigé en `glib` 0.20 : `gtk` 0.19.0, toujours GTK 3, utilise `glib` 0.22 ; le blocage est `tao` 0.37.3 qui épingle `gtk ^0.18` (et `gtk` 0.19 exige Rust 1.92, au-dessus de notre MSRV 1.90) |
+
+Les avertissements « non maintenu » et « unsound » ne font pas échouer `cargo audit` ; une vulnérabilité, elle, fait échouer la CI. Après une mise à jour de Tauri, relancer `cargo audit --file src-tauri/Cargo.lock` pour voir si l'un d'eux disparaît.
+
 ## Limites
 
 - Le balayage de plage de la découverte reste IPv4 (base `a.b.c`, 1–254) : balayer un sous-réseau IPv6 (2^64 adresses) n’est pas faisable. En IPv6, la découverte ne voit que les hôtes déjà présents dans la table des voisins du système (ceux avec lesquels la machine a récemment échangé) ; l’ARP reste IPv4.
