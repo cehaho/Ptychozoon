@@ -22,7 +22,7 @@ use std::collections::HashSet;
 use std::path::PathBuf;
 use std::time::Duration;
 
-use chrono::{DateTime, Local, NaiveDate, NaiveDateTime, TimeZone, Utc};
+use jiff::{Timestamp, civil, tz::TimeZone};
 use serde_json::{Map, Value, json};
 use tauri::AppHandle;
 
@@ -191,7 +191,7 @@ pub fn folder_command(path: &str, depth: u64) -> Option<String> {
 #[derive(Debug, PartialEq)]
 pub enum Reading {
     /// Time of the last good backup.
-    At(DateTime<Utc>),
+    At(Timestamp),
     /// The check says the backup failed; the text says why.
     Failed(String),
 }
@@ -224,7 +224,14 @@ pub fn parse_reading(output: &str) -> Result<Reading, String> {
         .ok_or_else(|| format!("Not a date: {}", clip(line, 80)))
 }
 
-pub fn parse_time(text: &str) -> Option<DateTime<Utc>> {
+pub fn parse_time(text: &str) -> Option<Timestamp> {
+    parse_time_in(text, &TimeZone::system())
+}
+
+/// `parse_time`, reading dates that carry no offset in `zone`. A local time
+/// that is ambiguous (the autumn fold) resolves to the earlier instant, and one
+/// that does not exist (the spring gap) moves forward by the gap.
+fn parse_time_in(text: &str, zone: &TimeZone) -> Option<Timestamp> {
     let text = text.trim().trim_matches('"');
     if let Ok(number) = text.parse::<f64>() {
         if !number.is_finite() || number <= 0.0 {
@@ -235,39 +242,41 @@ pub fn parse_time(text: &str) -> Option<DateTime<Utc>> {
         } else {
             number
         };
-        return Utc.timestamp_opt(seconds.trunc() as i64, 0).single();
+        return Timestamp::from_second(seconds.trunc() as i64).ok();
     }
-    if let Ok(date) = DateTime::parse_from_rfc3339(text) {
-        return Some(date.with_timezone(&Utc));
-    }
-    for format in [
-        "%Y-%m-%d %H:%M:%S%.f",
-        "%Y-%m-%dT%H:%M:%S%.f",
-        "%Y-%m-%d %H:%M",
-    ] {
-        if let Ok(naive) = NaiveDateTime::parse_from_str(text, format) {
-            return Local
-                .from_local_datetime(&naive)
-                .earliest()
-                .map(|date| date.with_timezone(&Utc));
+    // RFC 3339, also when the date and the time are joined by a space.
+    let tightened = text.replacen(' ', "T", 1);
+    for candidate in [text, tightened.as_str()] {
+        if let Ok(timestamp) = candidate.parse::<Timestamp>() {
+            return Some(timestamp);
         }
     }
-    if let Ok(day) = NaiveDate::parse_from_str(text, "%Y-%m-%d") {
-        return Local
-            .from_local_datetime(&day.and_hms_opt(0, 0, 0)?)
-            .earliest()
-            .map(|date| date.with_timezone(&Utc));
-    }
-    None
+    let (day, clock) = match text.split_once(['T', ' ']) {
+        Some((day, clock)) => (day, Some(clock)),
+        None => (text, None),
+    };
+    let day: civil::Date = day.parse().ok()?;
+    let clock = match clock {
+        Some(clock) => clock
+            .parse::<civil::Time>()
+            .or_else(|_| format!("{clock}:00").parse::<civil::Time>())
+            .ok()?,
+        None => civil::Time::midnight(),
+    };
+    Some(
+        zone.to_zoned_datetime(day.to_datetime(clock))
+            .ok()?
+            .timestamp(),
+    )
 }
 
 /// `ok` while the last backup is younger than `max_age_hours`, else `late`.
-pub fn verdict(reading: &Reading, max_age_hours: u64, now: DateTime<Utc>) -> &'static str {
+pub fn verdict(reading: &Reading, max_age_hours: u64, now: Timestamp) -> &'static str {
     match reading {
         Reading::Failed(_) => "failed",
         Reading::At(at) => {
-            let age = now.signed_duration_since(*at);
-            if age.num_seconds() <= (max_age_hours as i64) * 3600 {
+            let age = now.as_second().saturating_sub(at.as_second());
+            if age <= (max_age_hours as i64) * 3600 {
                 "ok"
             } else {
                 "late"
@@ -397,13 +406,23 @@ where
 }
 
 async fn check_one(app: &AppHandle, flow: &Value, nodes: &[Value], approvals: &[Value]) -> Value {
-    let id = flow["id"].as_str().unwrap_or("").to_string();
+    let id = flow["id"].as_str().unwrap_or("");
     let max_age = flow["maxAgeHours"]
         .as_u64()
         .unwrap_or(DEFAULT_MAX_AGE_HOURS);
     let outcome = read_check(app, &flow["check"], nodes, approvals).await;
-    let now = Utc::now();
-    let checked_at = now.to_rfc3339();
+    flow_result(id, outcome, max_age, Timestamp::now())
+}
+
+/// The result of one check. `checkedAt` and `last` are RFC 3339 with a `Z`
+/// offset: that is what the renderer hands to `Date.parse`.
+fn flow_result(
+    id: &str,
+    outcome: Result<Option<Reading>, String>,
+    max_age: u64,
+    now: Timestamp,
+) -> Value {
+    let checked_at = now.to_string();
     match outcome {
         Ok(None) => {
             json!({ "id": id, "state": "unknown", "last": null, "detail": "", "checkedAt": checked_at })
@@ -411,7 +430,7 @@ async fn check_one(app: &AppHandle, flow: &Value, nodes: &[Value], approvals: &[
         Ok(Some(reading)) => {
             let state = verdict(&reading, max_age, now);
             let (last, detail) = match &reading {
-                Reading::At(at) => (json!(at.to_rfc3339()), String::new()),
+                Reading::At(at) => (json!(at.to_string()), String::new()),
                 Reading::Failed(reason) => (Value::Null, reason.clone()),
             };
             json!({ "id": id, "state": state, "last": last, "detail": detail, "checkedAt": checked_at })
@@ -627,7 +646,7 @@ mod tests {
 
     #[test]
     fn readings_accept_unix_times_iso_dates_and_failures() {
-        let at = Utc.timestamp_opt(1_700_000_000, 0).unwrap();
+        let at = Timestamp::from_second(1_700_000_000).unwrap();
         assert_eq!(parse_reading("1700000000\n").unwrap(), Reading::At(at));
         assert_eq!(
             parse_reading("noise\n1700000000.123456\n\n").unwrap(),
@@ -657,17 +676,99 @@ mod tests {
 
     #[test]
     fn verdict_compares_the_age_with_the_limit() {
-        let now = Utc.timestamp_opt(1_700_100_000, 0).unwrap();
-        let recent = Reading::At(now - chrono::Duration::hours(25));
-        let old = Reading::At(now - chrono::Duration::hours(27));
-        assert_eq!(verdict(&recent, 26, now), "ok");
-        assert_eq!(verdict(&old, 26, now), "late");
+        let now = Timestamp::from_second(1_700_100_000).unwrap();
+        let at = |hours: i64| Timestamp::from_second(1_700_100_000 - hours * 3600).unwrap();
+        assert_eq!(verdict(&Reading::At(at(25)), 26, now), "ok");
+        assert_eq!(verdict(&Reading::At(at(26)), 26, now), "ok");
+        assert_eq!(verdict(&Reading::At(at(27)), 26, now), "late");
+        assert_eq!(verdict(&Reading::At(at(-1)), 26, now), "ok");
         assert_eq!(verdict(&Reading::Failed("x".into()), 26, now), "failed");
     }
 
     #[test]
+    fn dates_without_an_offset_are_read_in_the_given_zone() {
+        let plus_two = TimeZone::fixed(jiff::tz::offset(2));
+        assert_eq!(
+            parse_time_in("2023-11-14 22:13:20", &plus_two)
+                .unwrap()
+                .as_second(),
+            1_699_992_800
+        );
+        assert_eq!(
+            parse_time_in("2023-11-14T22:13", &plus_two)
+                .unwrap()
+                .as_second(),
+            1_699_992_780
+        );
+        assert_eq!(
+            parse_time_in("2023-11-14", &plus_two).unwrap().as_second(),
+            1_699_912_800
+        );
+        // Timestamps that carry their own offset ignore the zone.
+        assert_eq!(
+            parse_time_in("2023-11-14T23:13:20+01:00", &plus_two)
+                .unwrap()
+                .as_second(),
+            1_700_000_000
+        );
+    }
+
+    #[test]
+    fn the_autumn_fold_takes_the_earlier_instant_and_the_spring_gap_moves_forward() {
+        let paris = TimeZone::get("Europe/Paris").unwrap();
+        // 2024-10-27 02:30 exists twice in Paris: CEST (+02:00) then CET (+01:00).
+        assert_eq!(
+            parse_time_in("2024-10-27 02:30:00", &paris).unwrap(),
+            "2024-10-27T00:30:00Z".parse().unwrap()
+        );
+        // 2024-03-31 02:30 is skipped by the clock, which jumps to 03:00 CEST.
+        assert_eq!(
+            parse_time_in("2024-03-31 02:30:00", &paris).unwrap(),
+            "2024-03-31T01:30:00Z".parse().unwrap()
+        );
+    }
+
+    #[test]
+    fn result_dates_are_rfc3339_with_a_z_offset() {
+        let now = Timestamp::from_second(1_700_000_000).unwrap();
+        let at = Timestamp::from_second(1_699_000_000).unwrap();
+        let dated = flow_result("f1", Ok(Some(Reading::At(at))), 26, now);
+        assert_eq!(dated["checkedAt"], "2023-11-14T22:13:20Z");
+        assert_eq!(dated["last"], "2023-11-03T08:26:40Z");
+        assert!(is_rfc3339(dated["checkedAt"].as_str().unwrap()));
+
+        let unknown = flow_result("f2", Ok(None), 26, now);
+        assert_eq!(unknown["last"], Value::Null);
+        assert!(is_rfc3339(unknown["checkedAt"].as_str().unwrap()));
+
+        let failed = flow_result("f3", Ok(Some(Reading::Failed("disk".into()))), 26, now);
+        assert_eq!(failed["last"], Value::Null);
+        assert!(is_rfc3339(failed["checkedAt"].as_str().unwrap()));
+
+        // The live clock keeps its sub-second precision, still RFC 3339.
+        let live = flow_result("f4", Ok(None), 26, Timestamp::now());
+        assert!(is_rfc3339(live["checkedAt"].as_str().unwrap()));
+    }
+
+    /// `YYYY-MM-DDTHH:MM:SS[.fraction]Z`, and it must parse back.
+    fn is_rfc3339(text: &str) -> bool {
+        let bytes = text.as_bytes();
+        bytes.len() >= 20
+            && bytes[4] == b'-'
+            && bytes[7] == b'-'
+            && bytes[10] == b'T'
+            && bytes[13] == b':'
+            && bytes[16] == b':'
+            && text.ends_with('Z')
+            && text[19..text.len() - 1]
+                .chars()
+                .all(|c| c == '.' || c.is_ascii_digit())
+            && text.parse::<Timestamp>().is_ok()
+    }
+
+    #[test]
     fn http_bodies_are_text_or_a_json_field() {
-        let at = Utc.timestamp_opt(1_700_000_000, 0).unwrap();
+        let at = Timestamp::from_second(1_700_000_000).unwrap();
         assert_eq!(
             reading_from_body("1700000000", "").unwrap(),
             Reading::At(at)

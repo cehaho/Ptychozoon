@@ -242,6 +242,19 @@ La configuration est dans `eslint.config.mjs` et `.prettierrc.json`. Prettier ne
 
 La CI GitHub Actions (`.github/workflows/ci.yml`) exécute `npm run lint` puis `npm test` sur Ubuntu à chaque pull request et à chaque push sur `main`. Un second job, `MSRV (Rust 1.90)`, recompile tous les cibles avec Rust 1.90 pour vérifier le `rust-version` déclaré dans `src-tauri/Cargo.toml` (le premier job utilise `stable`, épinglée par `rust-toolchain.toml`).
 
+### Avertissements `cargo audit` connus
+
+Le job « Security audit » sort en succès : `src-tauri/Cargo.lock` ne contient aucune vulnérabilité. Six avertissements sont malgré tout listés, et aucun n'a de correctif disponible aujourd'hui. Les dates (plannings des flux, horodatages) passent par `jiff`, qui lit les dates sans décalage dans la zone système et résout l'heure d'été à la manière de `Disambiguation::Compatible` : l'instant le plus tôt dans le repli d'automne, un décalage vers l'avant dans le saut de printemps.
+
+| Avis | Crate | Tiré par | Pourquoi il reste |
+| --- | --- | --- | --- |
+| RUSTSEC-2026-0543 (non maintenu) | `chrono` 0.4.45 | `russh-util` ← `russh` (SSH) | notre code ne l'utilise plus (`jiff`) ; la crate reste tirée par `russh`, donc la sortie viendra de `russh` |
+| RUSTSEC-2024-0370 (non maintenu) | `proc-macro-error` 1.0.4 | `glib-macros`, `gtk3-macros` | uniquement à la compilation, via la pile GTK 3 |
+| RUSTSEC-2026-0370 / 0371 / 0372 (non maintenus) | `zvariant`, `zbus_names`, `zvariant_derive` 5.x | `zbus` 5.19 ← `secret-service`, `tauri-plugin-notification`, `tauri-plugin-opener`, `zbus-secret-service-keyring-store` | `zbus` 6 existe mais ces crates dépendent encore de la 5 |
+| RUSTSEC-2024-0429 (unsound) | `glib` 0.18.5 | `gtk` 0.18 ← `tao`, `wry`, `webkit2gtk` | corrigé en 0.20, donc après le passage à GTK 4, qui dépend de Tauri |
+
+Les avertissements « non maintenu » et « unsound » ne font pas échouer `cargo audit` ; une vulnérabilité, elle, fait échouer la CI. Après une mise à jour de Tauri, relancer `cargo audit --file src-tauri/Cargo.lock` pour voir si l'un d'eux disparaît.
+
 ## Limites
 
 - Le balayage de plage de la découverte reste IPv4 (base `a.b.c`, 1–254) : balayer un sous-réseau IPv6 (2^64 adresses) n’est pas faisable. En IPv6, la découverte ne voit que les hôtes déjà présents dans la table des voisins du système (ceux avec lesquels la machine a récemment échangé) ; l’ARP reste IPv4.

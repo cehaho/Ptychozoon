@@ -87,7 +87,7 @@ pub fn remember(path: &Path, host: &str, port: u16, key: &HostKey) -> Result<(),
         name,
         Entry {
             key: key.clone(),
-            added_at: chrono::Utc::now().to_rfc3339(),
+            added_at: jiff::Timestamp::now().to_string(),
         },
     );
     write(path, &document)
@@ -315,7 +315,7 @@ pub fn import_openssh(path: &Path, text: &str) -> Result<ImportSummary, String> 
 
     let _guard = lock();
     let mut document = read(path)?;
-    let added_at = chrono::Utc::now().to_rfc3339();
+    let added_at = jiff::Timestamp::now().to_string();
     for (name, (host, port, mut keys)) in found {
         keys.sort_by_key(|key| preference(&key.algorithm));
         let chosen = &keys[0];
@@ -470,6 +470,23 @@ mod tests {
             check(&path, "10.0.0.1", 22, &key("B")).unwrap(),
             Verdict::Match
         );
+    }
+
+    #[test]
+    fn remembered_keys_carry_an_rfc3339_date() {
+        let path = temp_path("added-at");
+        remember(&path, "10.0.0.1", 22, &key("A")).unwrap();
+        let listed = list(&path).unwrap();
+        let added_at = &listed[0].added_at;
+        let bytes = added_at.as_bytes();
+        assert!(bytes.len() >= 20, "{added_at}");
+        assert_eq!(
+            [bytes[4], bytes[7], bytes[10], bytes[13], bytes[16]],
+            [b'-', b'-', b'T', b':', b':'],
+            "{added_at}"
+        );
+        assert!(added_at.ends_with('Z'), "{added_at}");
+        assert!(added_at.parse::<jiff::Timestamp>().is_ok(), "{added_at}");
     }
 
     #[test]

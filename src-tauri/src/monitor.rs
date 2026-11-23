@@ -49,7 +49,7 @@ pub fn start(app: AppHandle, config: Value) -> JoinHandle<()> {
             let mut dirty = false;
             let mut seen = HashSet::new();
             let mut public = Vec::new();
-            let at = chrono::Utc::now().to_rfc3339();
+            let at = jiff::Timestamp::now().to_string();
             for sample in measured {
                 if sample.id.is_empty() {
                     continue;
@@ -91,7 +91,7 @@ pub fn start(app: AppHandle, config: Value) -> JoinHandle<()> {
             }
             let payload = json!({
                 "nodes": public,
-                "updated": chrono::Local::now().format("%H:%M:%S").to_string(),
+                "updated": jiff::ZonedDateTime::now().strftime("%H:%M:%S").to_string(),
             });
             if app.emit("monitor-status", payload).is_err() {
                 break;
