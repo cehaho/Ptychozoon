@@ -59,8 +59,13 @@
       arp: () => invoke('network_arp'),
       neighbors: () => invoke('network_neighbors'),
       enrich: (hosts) => invoke('network_enrich', { hosts }),
+      identify: (hosts) => invoke('network_identify', { hosts }),
       onEnrichResult: (callback) => subscribe('network-enrich-result', callback),
+      onIdentifyResult: (callback) => subscribe('network-identify-result', callback),
       onScanProgress: (callback) => subscribe('network-scan-progress', callback)
+    },
+    proxmox: {
+      discover: (options) => invoke('proxmox_discover', options)
     },
     image: {
       export: (format, data, fileName) => invoke('image_export', { format, data, fileName })

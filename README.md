@@ -10,9 +10,10 @@ Dessinez votre réseau, voyez en direct quels équipements répondent, et ouvrez
 
 ## Fonctions
 
-- **Canevas** : nœuds, ports, liens principal / secours, conteneurs (Proxmox, Docker, rack…) et zones VLAN ; grille magnétique, mini-carte, annuler / rétablir.
+- **Canevas** : nœuds, ports, liens principal / secours, conteneurs (Proxmox, Docker, rack…) et zones VLAN ; canevas sans bord (panoramique libre, grille et coordonnées continues), mini-carte, annuler / rétablir.
 - **Supervision** : ping, ports TCP, HTTP(S) et DNS, avec confirmation sur deux mesures, latence, historique et notifications système.
-- **Découverte** : balayage d’une plage IPv4, table ARP et voisins IPv6, nom DNS et fabricant de chaque hôte.
+- **Découverte** : balayage d’une plage IPv4, table ARP et voisins IPv6, nom DNS et fabricant de chaque hôte, empreinte des interfaces UniFi, AirOS et EdgeOS.
+- **Invités Proxmox** : les VM et conteneurs d’un hôte Proxmox VE, lus par l’API (port 8006, jeton non enregistré) et rangés sous un conteneur Proxmox.
 - **SNMP v2c** : état des interfaces et charge des liens.
 - **Flux de backup** : flèches de la machine sauvegardée vers sa copie, vertes, orange (en retard) ou rouges (en échec) selon la date du dernier backup, lue par SSH (dossier ou commande) ou HTTP.
 - **SSH** : terminal intégré, mot de passe ou clé, vérification des clés d’hôte.

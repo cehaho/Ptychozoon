@@ -1,8 +1,8 @@
 // Discovery helpers: suggested node names and icons from reverse DNS and
 // MAC vendor, deduplication against the canvas, and placement of new nodes.
 //
-// Pure functions only. app/discovery-ui.js owns the dialog and the document; positions
-// are canvas percentages (see canvas.js: x of the width, y of the height).
+// Pure functions only. app/discovery-ui.js owns the dialog and the document;
+// positions are world pixels (see canvas.js), so the canvas has no edge.
 (function (root, factory) {
   const api = factory();
   if (typeof module === 'object' && module.exports) {
@@ -13,13 +13,20 @@
   'use strict';
 
   const PRIVATE_VENDOR = 'Private/random';
-  const PLACE_STEP_X = 10;
-  const PLACE_STEP_Y = 12;
-  const MIN_GAP = 6; // a new node keeps this distance from existing ones
-  const MAX_X = 95;
-  const MIN_X = 5;
-  const MIN_Y = 5;
-  const MAX_Y = 245; // 50 rows of 5%
+  // Fingerprints from `network_identify` (src-tauri/src/identify.rs) and the
+  // Lucide icon each kind gets.
+  const DEVICE_ICONS = {
+    unifi: 'router',
+    airmax: 'wifi',
+    edge: 'router',
+    proxmox: 'server'
+  };
+  // Placement in world pixels. The canvas is endless, so there is no edge to
+  // stop at; the ring grows until every host has a free cell.
+  const PLACE_STEP_X = 200;
+  const PLACE_STEP_Y = 200;
+  const MIN_GAP = 160; // a new node keeps this distance from existing ones
+  const MAX_RING = 500;
 
   // Vendor and hostname hints, checked in order. Icons are Lucide names.
   const ICON_RULES = [
@@ -122,11 +129,14 @@
     return parts[parts.length - 1] || text;
   }
 
-  // PTR short name, else "<vendor> <last octet>", else "Device <ip>".
+  // PTR short name, else "<device> <last octet>", else "<vendor> <last
+  // octet>", else "Device <ip>".
   function suggestName(host) {
     const entry = host || {};
     const short = shortHostName(entry.hostname);
     if (short) return short;
+    const device = String(entry.device || '').trim();
+    if (device) return device + ' ' + addressSuffix(entry.ip);
     const vendor = usableVendor(entry.vendor);
     if (vendor) return vendor + ' ' + addressSuffix(entry.ip);
     return 'Device ' + String(entry.ip || '');
@@ -142,12 +152,27 @@
       const byHost = ICON_RULES.find((rule) => rule.host.test(words));
       if (byHost) return byHost.icon;
     }
+    const byDevice = DEVICE_ICONS[entry.deviceKind];
+    if (byDevice) return byDevice;
     const vendor = usableVendor(entry.vendor);
     if (vendor) {
       const byVendor = ICON_RULES.find((rule) => rule.vendor.test(vendor));
       if (byVendor) return byVendor.icon;
     }
     return 'circle';
+  }
+
+  // Hosts worth a fingerprint: a Ubiquiti or Proxmox vendor, or a host name
+  // that names one of their products. A host already identified is skipped.
+  const IDENTIFY_VENDOR = /\b(ubiquiti|unifi|proxmox)\b/i;
+  const IDENTIFY_HOST = /\b(unifi|proxmox|pve|ap|uap|usw|udm)\b/i;
+  function identifyCandidate(host) {
+    const entry = host || {};
+    if (entry.deviceKind) return false;
+    const vendor = usableVendor(entry.vendor);
+    if (vendor && IDENTIFY_VENDOR.test(vendor)) return true;
+    const words = shortHostName(entry.hostname).replace(/[-_]+/g, ' ');
+    return Boolean(words) && IDENTIFY_HOST.test(words);
   }
 
   // Hosts whose address is not already a node (nor repeated in the list).
@@ -166,23 +191,18 @@
     return out;
   }
 
-  function clamp(value, min, max) {
-    return Math.max(min, Math.min(max, value));
-  }
-
   // `count` positions on a grid around `center`, filled ring by ring
   // (nearest cells first), skipping cells within MIN_GAP of an existing node.
   function placeNear(center, count, existing) {
-    const cx = clamp(Number(center && center.x) || 50, MIN_X, MAX_X);
-    const cy = clamp(Number(center && center.y) || 50, MIN_Y, MAX_Y);
+    const cx = Number.isFinite(Number(center && center.x)) ? Number(center.x) : 0;
+    const cy = Number.isFinite(Number(center && center.y)) ? Number(center.y) : 0;
     const taken = (existing || [])
       .filter((node) => node && Number.isFinite(node.x) && Number.isFinite(node.y))
       .map((node) => ({ x: node.x, y: node.y }));
     const free = (x, y) =>
       taken.every((p) => Math.abs(p.x - x) >= MIN_GAP || Math.abs(p.y - y) >= MIN_GAP);
     const positions = [];
-    const maxRing = Math.ceil((MAX_Y - MIN_Y) / PLACE_STEP_Y) + 1;
-    for (let ring = 0; positions.length < count && ring <= maxRing; ring += 1) {
+    for (let ring = 0; positions.length < count && ring <= MAX_RING; ring += 1) {
       const cells = [];
       for (let row = -ring; row <= ring; row += 1) {
         for (let col = -ring; col <= ring; col += 1) {
@@ -196,8 +216,8 @@
         if (positions.length >= count) break;
         const x = cx + cell.col * PLACE_STEP_X;
         const y = cy + cell.row * PLACE_STEP_Y;
-        if (x < MIN_X || x > MAX_X || y < MIN_Y || y > MAX_Y || !free(x, y)) continue;
-        const point = { x: Math.round(x * 100) / 100, y: Math.round(y * 100) / 100 };
+        if (!free(x, y)) continue;
+        const point = { x: Math.round(x), y: Math.round(y) };
         positions.push(point);
         taken.push(point);
       }
@@ -207,7 +227,8 @@
     return positions;
   }
 
-  // Node fields for the selected hosts that are not on the canvas yet:
+  // Node fields (world pixel positions) for the selected hosts that are not on
+  // the canvas yet:
   // { name, address, mac?, icon, iconType, x, y }. `host.name` (edited in
   // the dialog) wins over the suggestion.
   function nodesForHosts(hosts, nodes, center) {
@@ -293,6 +314,7 @@
     shortHostName: shortHostName,
     suggestName: suggestName,
     suggestIcon: suggestIcon,
+    identifyCandidate: identifyCandidate,
     newHosts: newHosts,
     placeNear: placeNear,
     nodesForHosts: nodesForHosts

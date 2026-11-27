@@ -454,10 +454,11 @@
   function addRow() {
     const doc = current();
     const node = Topology.createNode({});
+    // World pixels: the canvas has no edge, so the table simply spreads out.
     const column = doc.nodes.length % 10;
     const row = Math.floor(doc.nodes.length / 10);
-    node.x = column * 10 + 5;
-    node.y = row * 15 + 10;
+    node.x = column * 200;
+    node.y = row * 200;
     doc.nodes.push(node);
     doc.ports = Topology.collectPorts(doc.nodes);
     markDirty();
@@ -485,8 +486,8 @@
         Object.assign({}, port, { id: id + '_port_' + portIndex })
       );
     }
-    if (typeof copy.x === 'number') copy.x = Math.min(95, copy.x + 5);
-    if (typeof copy.y === 'number') copy.y = Math.min(95, copy.y + 5);
+    if (typeof copy.x === 'number') copy.x = copy.x + 40;
+    if (typeof copy.y === 'number') copy.y = copy.y + 40;
     doc.nodes.push(copy);
     const primary = Topology.parentNodeId(doc, original.id, 'primary');
     const failover = Topology.parentNodeId(doc, original.id, 'failover');

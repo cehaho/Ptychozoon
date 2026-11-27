@@ -1,5 +1,5 @@
-// Drawing of the canvas: grid labels, nodes and containers (renderTree),
-// status look of a node, container expand/collapse.
+// Drawing of the canvas: nodes and containers (renderTree), status look of a
+// node, container expand/collapse.
 
 import { Probe, SnmpUI, Topology, TopologyCanvas, lucide } from './libs.js';
 import {
@@ -15,10 +15,21 @@ import { CanvasSearch } from './search-ui.js';
 import { drawLines } from './canvas-links.js';
 import { saveStateForUndo } from './undo.js';
 
-// Grid System Constants
-const gridCols = [];
-for (let i = 0; i < 26; i++) gridCols.push(String.fromCharCode(65 + i));
-for (let i = 0; i < 26; i++) gridCols.push('A' + String.fromCharCode(65 + i));
+// Grid System
+
+// Position of a node in world pixels. A node without one falls back to a
+// place in the tree, centred on the origin.
+function nodePosition(node, levels, maxLevel) {
+  const x = Number(node.x);
+  const y = Number(node.y);
+  if (Number.isFinite(x) && Number.isFinite(y)) return { x: x, y: y };
+  const levelNodes = levels[node.level] || [];
+  const idx = Math.max(0, levelNodes.indexOf(node));
+  return {
+    x: (idx - (levelNodes.length - 1) / 2) * 200,
+    y: (node.level - maxLevel / 2) * 180
+  };
+}
 
 // renderTree wires node events to these handlers. main.js sets them: they
 // live in modules that redraw the canvas themselves (drag, menu, node form).
@@ -37,37 +48,8 @@ function parentIdOf(nodeId, role) {
   return Topology.parentNodeId(state.config, nodeId, role);
 }
 
-export function drawGridSystem() {
-  const labelContainer = document.getElementById('grid-labels');
-  labelContainer.innerHTML = '';
-
-  gridCols.forEach((char, i) => {
-    const el = document.createElement('div');
-    el.className = 'grid-label';
-    el.innerText = char;
-    el.style.top = '0';
-    el.style.left = i * 5 + 'vw';
-    el.style.width = '5vw';
-    el.style.height = '20px';
-    labelContainer.appendChild(el);
-  });
-
-  for (let i = 1; i <= 50; i++) {
-    const el = document.createElement('div');
-    el.className = 'grid-label';
-    el.innerText = i;
-    el.style.left = '0';
-    el.style.top = (i - 1) * 5 + 'vh';
-    el.style.height = '5vh';
-    el.style.width = '20px';
-    el.style.justifyContent = 'flex-start';
-    el.style.paddingLeft = '4px';
-    labelContainer.appendChild(el);
-  }
-}
-
 export function getGridCell(x, y) {
-  return TopologyCanvas.gridCell(x, y, gridCols);
+  return TopologyCanvas.gridCell(x, y);
 }
 
 // A node icon given as an image URL disappears when it fails to load.
@@ -255,23 +237,9 @@ export function renderTree(nodes) {
     const children = childNodes.filter((c) => c.containerId === node.id);
     const isExpanded = node.expanded !== false;
 
-    let leftPos, topPos;
-    if (node.x !== null && node.x !== undefined) {
-      leftPos = node.x + '%';
-    } else {
-      const levelNodes = levels[node.level];
-      const idx = levelNodes.indexOf(node);
-      const slice = 100 / (levelNodes.length + 1);
-      leftPos = slice * (idx + 1) + '%';
-    }
-    if (node.y !== null && node.y !== undefined) {
-      topPos = node.y + '%';
-    } else {
-      topPos = maxLevel === 0 ? '50%' : 85 - node.level * (70 / maxLevel) + '%';
-    }
-
-    el.style.left = leftPos;
-    el.style.top = topPos;
+    const position = nodePosition(node, levels, maxLevel);
+    el.style.left = position.x + 'px';
+    el.style.top = position.y + 'px';
     el.style.pointerEvents = 'auto';
 
     const view = statusView(node.status);
@@ -465,30 +433,16 @@ export function renderTree(nodes) {
     el.dataset.nodeId = node.id;
     SnmpUI.decorateNode(el, node.id);
 
-    let leftPos, topPos;
-    if (node.x !== null && node.x !== undefined) {
-      leftPos = node.x + '%';
-    } else {
-      const levelNodes = levels[node.level];
-      const idx = levelNodes.indexOf(node);
-      const slice = 100 / (levelNodes.length + 1);
-      leftPos = slice * (idx + 1) + '%';
-    }
-    if (node.y !== null && node.y !== undefined) {
-      topPos = node.y + '%';
-    } else {
-      topPos = maxLevel === 0 ? '50%' : 85 - node.level * (70 / maxLevel) + '%';
-    }
-
-    el.style.left = leftPos;
-    el.style.top = topPos;
+    const position = nodePosition(node, levels, maxLevel);
+    el.style.left = position.x + 'px';
+    el.style.top = position.y + 'px';
     el.style.width = '140px';
     el.style.height = '140px';
     el.style.pointerEvents = 'auto';
 
     const view = statusView(node.status);
     const iconHtml = generateIconHtml(node);
-    const gridCell = getGridCell(node.x || 50, node.y || 50);
+    const gridCell = getGridCell(position.x, position.y);
     const portsHtml = generatePortsHtml(node);
 
     el.innerHTML = `

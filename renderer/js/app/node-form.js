@@ -15,6 +15,7 @@ import {
 } from './ui.js';
 import { saveConfig } from './io.js';
 import { renderTree } from './canvas-render.js';
+import { viewportCenter } from './viewport.js';
 import { refreshHostList } from './host-list.js';
 import { saveStateForUndo } from './undo.js';
 import { startMonitoring, stopMonitoring } from './monitoring.js';
@@ -484,12 +485,13 @@ async function saveNode() {
       state.config.nodes[idx] = nodeData;
     }
   } else {
-    // Add new node - auto position
+    // Add new node - auto position, in a grid around the middle of the view
+    const center = viewportCenter();
     const existingCount = state.config.nodes.length;
-    const col = existingCount % 10;
-    const row = Math.floor(existingCount / 10);
-    nodeData.x = col * 10 + 5;
-    nodeData.y = row * 15 + 10;
+    const col = existingCount % 6;
+    const row = Math.floor(existingCount / 6);
+    nodeData.x = Math.round(center.x + (col - 2.5) * 200);
+    nodeData.y = Math.round(center.y + row * 200);
     state.config.nodes.push(nodeData);
   }
 

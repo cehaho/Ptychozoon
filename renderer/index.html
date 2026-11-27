@@ -35,6 +35,11 @@
       <span>Discover</span>
     </button>
 
+    <button class="toolbar-btn" id="btn-proxmox" title="Proxmox Guests">
+      <i data-lucide="server" class="w-4 h-4"></i>
+      <span>Proxmox</span>
+    </button>
+
     <button class="toolbar-btn" id="btn-flows" title="Backup Flows">
       <i data-lucide="database-backup" class="w-4 h-4"></i>
       <span>Backups</span>
@@ -120,8 +125,8 @@
     <!-- Main Viewport -->
     <div id="viewport-wrapper">
       <div id="viewport">
+        <div id="grid-layer" class="grid-bg"><div id="grid-labels"></div></div>
         <div id="world">
-          <div id="grid-layer" class="grid-bg"><div id="grid-labels"></div></div>
           <svg id="connections-layer" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none"></svg>
           <div id="tree-container" style="position:absolute; inset:0; z-index:20; pointer-events:none;"></div>
           <svg id="flows-label-layer" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none"></svg>
@@ -269,9 +274,59 @@
       </div>
     </div>
     <div class="modal-footer">
+      <button class="btn btn-secondary" data-action="open-proxmox">Proxmox Guests</button>
       <button class="btn btn-secondary" data-close-modal="discovery-modal">Close</button>
       <button class="btn btn-primary" id="btn-start-scan" data-action="start-scan">Start Scan</button>
       <button class="btn btn-primary hidden" id="btn-add-discovered" data-action="add-discovered">Add Selected to Canvas</button>
+    </div>
+  </div>
+</div>
+
+<!-- Proxmox Guests Modal -->
+<div id="proxmox-modal" class="modal-overlay hidden">
+  <div class="modal" style="width: 820px; max-width: 95vw;">
+    <div class="modal-header">
+      <h3><i data-lucide="server" class="w-5 h-5 inline mr-2"></i>Proxmox Guests</h3>
+      <button data-close-modal="proxmox-modal" class="text-slate-400 hover:text-ink">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
+    </div>
+    <div class="modal-body">
+      <p class="text-sm text-slate-400 mb-4">
+        Reads the virtual machines and containers of a Proxmox VE host through its API (port 8006).
+        Create a token in Datacenter &rarr; Permissions &rarr; API Tokens; the secret is shown once.
+        The token is used for this request only and is not saved.
+      </p>
+      <div class="grid grid-cols-2 gap-3">
+        <div class="form-group">
+          <label class="form-label">Host</label>
+          <input type="text" id="pve-address" class="form-input" placeholder="pve.lan or 10.0.0.5">
+        </div>
+        <div class="form-group">
+          <label class="form-label">API port</label>
+          <input type="number" id="pve-port" class="form-input" value="8006" min="1" max="65535">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Token id</label>
+        <input type="text" id="pve-token-id" class="form-input" placeholder="user@realm!token" autocomplete="off">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Token secret</label>
+        <input type="password" id="pve-token-secret" class="form-input" autocomplete="new-password">
+      </div>
+      <label class="flex items-center gap-2 text-sm text-slate-300">
+        <input type="checkbox" id="pve-insecure" checked> Accept the self-signed certificate
+      </label>
+      <p id="pve-status" class="text-sm text-slate-400 mt-3"></p>
+      <div id="pve-results" class="mt-3 max-h-72 overflow-y-auto hidden">
+        <!-- Guests here -->
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" data-close-modal="proxmox-modal">Close</button>
+      <button class="btn btn-secondary hidden" id="btn-add-guests" data-action="add-guests">Add Selected</button>
+      <button class="btn btn-primary" data-action="discover-proxmox">Discover</button>
     </div>
   </div>
 </div>

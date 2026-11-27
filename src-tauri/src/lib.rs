@@ -5,6 +5,7 @@ mod enrich;
 mod export;
 mod flows;
 mod hosts;
+mod identify;
 mod known_hosts;
 mod known_hosts_admin;
 mod latency;
@@ -13,6 +14,7 @@ mod network;
 mod probe;
 mod probe_kinds;
 mod process;
+mod proxmox;
 mod secrets;
 mod snmp;
 mod ssh;
@@ -209,6 +211,22 @@ async fn network_enrich(app: tauri::AppHandle, hosts: Vec<Value>) -> Value {
 }
 
 #[tauri::command]
+async fn network_identify(app: tauri::AppHandle, hosts: Vec<Value>) -> Value {
+    identify::identify(&app, &hosts).await
+}
+
+#[tauri::command]
+async fn proxmox_discover(
+    address: String,
+    port: Option<u16>,
+    token_id: String,
+    token_secret: String,
+    insecure_tls: Option<bool>,
+) -> Value {
+    proxmox::discover(address, port, token_id, token_secret, insecure_tls).await
+}
+
+#[tauri::command]
 async fn monitor_start(
     app: tauri::AppHandle,
     state: tauri::State<'_, AppState>,
@@ -300,6 +318,8 @@ pub fn run() {
             network_arp,
             network_neighbors,
             network_enrich,
+            network_identify,
+            proxmox_discover,
             monitor_start,
             monitor_stop,
             alerts::alerts_notify,

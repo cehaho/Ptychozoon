@@ -6,6 +6,17 @@ import { getViewport, updateTransform } from './viewport.js';
 import { linkAppearance } from './canvas-links.js';
 import { statusView } from './canvas-render.js';
 
+// The world box the minimap shows: the nodes and the visible viewport.
+function currentBounds() {
+  const rect = getViewport().getBoundingClientRect();
+  return TopologyCanvas.contentBounds(
+    { scale: state.scale, pointX: state.pointX, pointY: state.pointY },
+    rect.width,
+    rect.height,
+    state.config.nodes
+  );
+}
+
 export function initMinimap() {
   const minimapCanvas = document.getElementById('minimap-canvas');
   const minimap = document.getElementById('minimap');
@@ -21,18 +32,12 @@ export function initMinimap() {
     const clickY = e.clientY - rect.top;
 
     // Calculate world position
-    const minimapWidth = minimapCanvas.width;
-    const minimapHeight = minimapCanvas.height;
-    const worldWidth = window.innerWidth * 3; // 300% of viewport
-    const worldHeight = window.innerHeight * 3;
-
     const target = TopologyCanvas.minimapToWorld(
       clickX,
       clickY,
-      minimapWidth,
-      minimapHeight,
-      worldWidth,
-      worldHeight
+      currentBounds(),
+      minimapCanvas.width || 200,
+      minimapCanvas.height || 150
     );
 
     // Center viewport on this position
@@ -85,9 +90,11 @@ export function updateMinimap() {
 
   const isDark = document.documentElement.getAttribute('data-theme') !== 'light';
   const shown = displayedNodes();
+  const bounds = currentBounds();
   TopologyCanvas.drawMinimap(ctx, {
     width: minimapWidth,
     height: minimapHeight,
+    bounds: bounds,
     dark: isDark,
     nodes: state.config.nodes,
     links: state.config.links,
@@ -108,8 +115,7 @@ export function updateMinimap() {
       { scale: state.scale, pointX: state.pointX, pointY: state.pointY },
       viewportRect.width,
       viewportRect.height,
-      window.innerWidth * TopologyCanvas.WORLD_FACTOR,
-      window.innerHeight * TopologyCanvas.WORLD_FACTOR,
+      bounds,
       minimapWidth,
       minimapHeight
     );

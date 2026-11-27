@@ -122,7 +122,9 @@ export async function exportTopologyAsImage() {
     statusLabel: (node, view) => statusLabel(node, statusById, view),
     containerTypeLabel: (type) => typeLabels[type] || 'Container',
     gridCell: (node) => {
-      const cell = getGridCell(node.x || 50, node.y || 50);
+      const x = Number.isFinite(Number(node.x)) ? Number(node.x) : 0;
+      const y = Number.isFinite(Number(node.y)) ? Number(node.y) : 0;
+      const cell = getGridCell(x, y);
       return cell.col + cell.row;
     },
     toast: { success: toastSuccess, error: toastError },

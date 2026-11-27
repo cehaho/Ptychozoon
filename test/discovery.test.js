@@ -28,6 +28,33 @@ test('suggests a name from the PTR short name, then vendor and last octet', () =
   assert.equal(Discovery.shortHostName('printer.lan.'), 'printer');
 });
 
+test('a fingerprinted device names and icons the host before its vendor', () => {
+  assert.equal(
+    Discovery.suggestName({ ip: '192.168.1.42', vendor: 'Ubiquiti', device: 'UniFi OS' }),
+    'UniFi OS 42'
+  );
+  assert.equal(Discovery.suggestIcon({ vendor: 'Ubiquiti', deviceKind: 'unifi' }), 'router');
+  assert.equal(Discovery.suggestIcon({ deviceKind: 'airmax' }), 'wifi');
+  assert.equal(Discovery.suggestIcon({ deviceKind: 'proxmox' }), 'server');
+});
+
+test('only Ubiquiti and Proxmox hosts are fingerprinted', () => {
+  assert.equal(Discovery.identifyCandidate({ ip: '10.0.0.2', vendor: 'Ubiquiti' }), true);
+  assert.equal(
+    Discovery.identifyCandidate({ ip: '10.0.0.3', vendor: 'Proxmox Server Solutions' }),
+    true
+  );
+  // A Ubiquiti AP usually has no PTR name at all.
+  assert.equal(Discovery.identifyCandidate({ ip: '10.0.0.4', hostname: 'uap-lobby.lan' }), true);
+  assert.equal(Discovery.identifyCandidate({ ip: '10.0.0.5', vendor: 'Dell' }), false);
+  assert.equal(Discovery.identifyCandidate({ ip: '10.0.0.6' }), false);
+  // Already known: no second probe.
+  assert.equal(
+    Discovery.identifyCandidate({ ip: '10.0.0.7', vendor: 'Ubiquiti', deviceKind: 'unifi' }),
+    false
+  );
+});
+
 test('suggests an icon from hostname keywords, then vendor', () => {
   assert.equal(Discovery.suggestIcon({ hostname: 'printer01.lan' }), 'printer');
   assert.equal(Discovery.suggestIcon({ hostname: 'gw.lan', vendor: 'Apple' }), 'router');
@@ -71,10 +98,10 @@ test('places new nodes on a grid near the centre, clear of existing nodes', () =
   assert.equal(positions.length, 5);
   positions.forEach((p) => {
     assert.ok(
-      Math.abs(p.x - 50) >= 6 || Math.abs(p.y - 50) >= 6,
+      Math.abs(p.x - 50) >= 160 || Math.abs(p.y - 50) >= 160,
       'not on top of the existing node'
     );
-    assert.ok(Math.abs(p.x - 50) <= 10 && Math.abs(p.y - 50) <= 12, 'in the first ring');
+    assert.ok(Math.abs(p.x - 50) <= 200 && Math.abs(p.y - 50) <= 200, 'in the first ring');
   });
   const keys = new Set(positions.map((p) => p.x + ',' + p.y));
   assert.equal(keys.size, 5, 'no two new nodes share a cell');
@@ -82,9 +109,9 @@ test('places new nodes on a grid near the centre, clear of existing nodes', () =
   const first = Discovery.placeNear({ x: 50, y: 50 }, 1, []);
   assert.deepEqual(first, [{ x: 50, y: 50 }]);
 
-  // Near an edge, positions stay on the canvas.
-  Discovery.placeNear({ x: 2, y: 2 }, 12, []).forEach((p) => {
-    assert.ok(p.x >= 5 && p.x <= 95 && p.y >= 5 && p.y <= 245);
+  // There is no edge to run into, even far from the origin.
+  Discovery.placeNear({ x: 9900, y: 9900 }, 12, []).forEach((p) => {
+    assert.ok(Math.abs(p.x - 9900) <= 400 && Math.abs(p.y - 9900) <= 400);
   });
 });
 

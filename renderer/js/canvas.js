@@ -3,8 +3,9 @@
 //
 // Pure functions only; the app/ modules own the DOM and the view state
 // ({ scale, pointX, pointY }) and passes measurements in. Node positions are
-// percentages of the viewport (x of the width, y of the height); the grid is
-// 20 columns by 50 rows of 5% each.
+// absolute world pixels (x to the right, y downwards) with no bounds, so the
+// canvas pans without limit; the grid is a pattern of GRID_STEP px cells
+// anchored at the origin.
 (function (root, factory) {
   const api = factory();
   if (typeof module === 'object' && module.exports) {
@@ -14,43 +15,50 @@
 })(typeof globalThis !== 'undefined' ? globalThis : this, function () {
   'use strict';
 
-  const GRID_STEP = 5;
-  const GRID_ROWS = 50;
+  const GRID_STEP = 40; // world pixels; the grid has no outer edge
   const MIN_SCALE = 0.1;
   const MAX_SCALE = 5;
   const ZOOM_STEP = 1.1;
   const MINIMAP_WIDTH = 200;
   const MINIMAP_HEIGHT = 150;
-  const WORLD_FACTOR = 3; // the world is 300% of the viewport
+  const MINIMAP_PADDING = 200;
+  const LAYOUT_COLUMN = 200;
+  const LAYOUT_ROW = 180;
 
   function clamp(value, min, max) {
     return Math.max(min, Math.min(max, value));
   }
 
-  // Snap to the centre of a 5% cell. Off: the position is left alone.
+  // Spreadsheet-like column name: A, B, ..., Z, AA, AB, ... Negative
+  // columns (left of the origin) are prefixed with a dash: -A, -B, ...
+  function columnLabel(index) {
+    const negative = index < 0;
+    let n = negative ? -index - 1 : index;
+    let text = '';
+    do {
+      text = String.fromCharCode(65 + (n % 26)) + text;
+      n = Math.floor(n / 26) - 1;
+    } while (n >= 0);
+    return (negative ? '-' : '') + text;
+  }
+
+  // Snap to the centre of the GRID_STEP cell that holds the point. Off: the
+  // position is left alone. There is no edge to clamp to.
   function snapToGrid(x, y, enabled) {
     if (!enabled) return { x: x, y: y };
     const offset = GRID_STEP / 2;
-    const snappedX = Math.round((x - offset) / GRID_STEP) * GRID_STEP + offset;
-    const snappedY = Math.round((y - offset) / GRID_STEP) * GRID_STEP + offset;
     return {
-      x: clamp(snappedX, offset, 100 - offset),
-      y: clamp(snappedY, offset, GRID_ROWS * GRID_STEP - offset)
+      x: Math.round((x - offset) / GRID_STEP) * GRID_STEP + offset,
+      y: Math.round((y - offset) / GRID_STEP) * GRID_STEP + offset
     };
   }
 
-  function gridCell(x, y, cols) {
-    const colIndex = Math.floor((x - 0.01) / GRID_STEP);
-    const rowIndex = Math.floor((y - 0.01) / GRID_STEP) + 1;
+  // Cell of a world point: column letter and row number, both unbounded.
+  function gridCell(x, y) {
     return {
-      col: colIndex >= 0 && colIndex < cols.length ? cols[colIndex] : '?',
-      row: rowIndex >= 1 && rowIndex <= GRID_ROWS ? rowIndex : '?'
+      col: columnLabel(Math.floor(x / GRID_STEP)),
+      row: Math.floor(y / GRID_STEP) + 1
     };
-  }
-
-  // Keep a dragged node on the grid area before snapping.
-  function clampNodePosition(x, y) {
-    return { x: clamp(x, 1, 99), y: clamp(y, 1, GRID_ROWS * GRID_STEP) };
   }
 
   // Zoom one step around the cursor: the world point under it stays put.
@@ -86,16 +94,15 @@
     };
   }
 
-  function nodeInRect(node, rect, worldWidth, worldHeight) {
-    const x = (node.x / 100) * worldWidth;
-    const y = (node.y / 100) * worldHeight;
+  function nodeInRect(node, rect) {
+    const x = Number(node && node.x);
+    const y = Number(node && node.y);
+    if (!Number.isFinite(x) || !Number.isFinite(y)) return false;
     return x >= rect.x && x <= rect.x + rect.width && y >= rect.y && y <= rect.y + rect.height;
   }
 
-  function nodesInRect(nodes, rect, worldWidth, worldHeight) {
-    return (nodes || [])
-      .filter((node) => nodeInRect(node, rect, worldWidth, worldHeight))
-      .map((node) => node.id);
+  function nodesInRect(nodes, rect) {
+    return (nodes || []).filter((node) => nodeInRect(node, rect)).map((node) => node.id);
   }
 
   // Where a port sits along its side, in percent. Matches the CSS spread.
@@ -257,17 +264,18 @@
       byLevel.get(level).push(id);
     });
 
+    // Rows are centred on the origin, so the layout does not depend on the
+    // window size and fits whatever part of the canvas is on screen.
     const positions = new Map();
+    const levelCount = byLevel.size;
     byLevel.forEach((ids, level) => {
-      const startX = 50 - (ids.length * 12) / 2 + 6;
+      const startX = (-(ids.length - 1) * LAYOUT_COLUMN) / 2;
+      const y = (level - (levelCount - 1) / 2) * LAYOUT_ROW;
       ids.forEach((id, idx) => {
-        positions.set(id, {
-          x: clamp(startX + idx * 12, 5, 95),
-          y: clamp(10 + level * 15, 5, 95)
-        });
+        positions.set(id, { x: startX + idx * LAYOUT_COLUMN, y: y });
       });
     });
-    return { positions: positions, levelCount: byLevel.size };
+    return { positions: positions, levelCount: levelCount };
   }
 
   function minimapNodeColor(selected, state) {
@@ -277,11 +285,38 @@
     return '#8a8a8a';
   }
 
-  // Minimap point for a node position. The world is 300% of the viewport.
-  function minimapPoint(node, width, height) {
+  // Bounds shown by the minimap: the nodes plus the visible viewport, with
+  // some room around them. There is no fixed world size to fall back on.
+  function contentBounds(view, viewportWidth, viewportHeight, nodes, padding) {
+    const scale = (view && view.scale) || 1;
+    const pad = padding === undefined || padding === null ? MINIMAP_PADDING : padding;
+    let minX = -((view && view.pointX) || 0) / scale;
+    let minY = -((view && view.pointY) || 0) / scale;
+    let maxX = minX + viewportWidth / scale;
+    let maxY = minY + viewportHeight / scale;
+    (nodes || []).forEach((node) => {
+      const x = Number(node && node.x);
+      const y = Number(node && node.y);
+      if (!Number.isFinite(x) || !Number.isFinite(y)) return;
+      minX = Math.min(minX, x);
+      minY = Math.min(minY, y);
+      maxX = Math.max(maxX, x);
+      maxY = Math.max(maxY, y);
+    });
     return {
-      x: (node.x / 100) * (width / WORLD_FACTOR),
-      y: (node.y / 100) * (height / WORLD_FACTOR)
+      x: minX - pad,
+      y: minY - pad,
+      width: Math.max(maxX - minX + 2 * pad, 1),
+      height: Math.max(maxY - minY + 2 * pad, 1)
+    };
+  }
+
+  // Minimap point for a node position, inside `bounds`.
+  function minimapPoint(node, bounds, width, height) {
+    const box = bounds || { x: 0, y: 0, width: 1, height: 1 };
+    return {
+      x: ((Number(node.x) - box.x) / box.width) * width,
+      y: ((Number(node.y) - box.y) / box.height) * height
     };
   }
 
@@ -291,6 +326,7 @@
     const width = options.width || MINIMAP_WIDTH;
     const height = options.height || MINIMAP_HEIGHT;
     const nodes = options.nodes || [];
+    const bounds = options.bounds || contentBounds(null, 0, 0, nodes);
     const byId = new Map();
     nodes.forEach((n) => {
       if (!byId.has(n.id)) byId.set(n.id, n);
@@ -304,8 +340,8 @@
       const source = byId.get(link.sourceNodeId);
       const target = byId.get(link.targetNodeId);
       if (!source || !target) return;
-      const a = minimapPoint(source, width, height);
-      const b = minimapPoint(target, width, height);
+      const a = minimapPoint(source, bounds, width, height);
+      const b = minimapPoint(target, bounds, width, height);
       const look = options.lookFor(link);
       ctx.beginPath();
       ctx.strokeStyle = look.color;
@@ -317,7 +353,7 @@
     });
 
     nodes.forEach((node) => {
-      const p = minimapPoint(node, width, height);
+      const p = minimapPoint(node, bounds, width, height);
       ctx.fillStyle = options.colorFor(node);
       ctx.beginPath();
       ctx.arc(p.x, p.y, 3, 0, Math.PI * 2);
@@ -326,48 +362,42 @@
   }
 
   // The visible part of the world, in minimap pixels, clipped to the minimap.
-  function minimapIndicator(
-    view,
-    viewportWidth,
-    viewportHeight,
-    worldWidth,
-    worldHeight,
-    width,
-    height
-  ) {
+  function minimapIndicator(view, viewportWidth, viewportHeight, bounds, width, height) {
     const w = width || MINIMAP_WIDTH;
     const h = height || MINIMAP_HEIGHT;
-    const sx = w / worldWidth;
-    const sy = h / worldHeight;
-    const x = (-view.pointX / view.scale) * sx;
-    const y = (-view.pointY / view.scale) * sy;
+    const box = bounds || { x: 0, y: 0, width: 1, height: 1 };
+    const sx = w / box.width;
+    const sy = h / box.height;
+    const x = (-view.pointX / view.scale - box.x) * sx;
+    const y = (-view.pointY / view.scale - box.y) * sy;
+    const left = Math.max(0, x);
+    const top = Math.max(0, y);
     return {
-      left: Math.max(0, x),
-      top: Math.max(0, y),
-      width: Math.min(w - x, (viewportWidth / view.scale) * sx),
-      height: Math.min(h - y, (viewportHeight / view.scale) * sy)
+      left: left,
+      top: top,
+      width: Math.max(0, Math.min(w, x + (viewportWidth / view.scale) * sx) - left),
+      height: Math.max(0, Math.min(h, y + (viewportHeight / view.scale) * sy) - top)
     };
   }
 
   // A click on the minimap, as the world point it stands for.
-  function minimapToWorld(clickX, clickY, width, height, worldWidth, worldHeight) {
+  function minimapToWorld(clickX, clickY, bounds, width, height) {
+    const box = bounds || { x: 0, y: 0, width: 1, height: 1 };
     return {
-      x: (clickX / width) * worldWidth,
-      y: (clickY / height) * worldHeight
+      x: box.x + (clickX / width) * box.width,
+      y: box.y + (clickY / height) * box.height
     };
   }
 
   return {
     GRID_STEP: GRID_STEP,
-    GRID_ROWS: GRID_ROWS,
     MIN_SCALE: MIN_SCALE,
     MAX_SCALE: MAX_SCALE,
     MINIMAP_WIDTH: MINIMAP_WIDTH,
     MINIMAP_HEIGHT: MINIMAP_HEIGHT,
-    WORLD_FACTOR: WORLD_FACTOR,
+    columnLabel: columnLabel,
     snapToGrid: snapToGrid,
     gridCell: gridCell,
-    clampNodePosition: clampNodePosition,
     zoomAt: zoomAt,
     screenToWorld: screenToWorld,
     centerOn: centerOn,
@@ -384,6 +414,7 @@
     linkStroke: linkStroke,
     autoLayout: autoLayout,
     minimapNodeColor: minimapNodeColor,
+    contentBounds: contentBounds,
     minimapPoint: minimapPoint,
     drawMinimap: drawMinimap,
     minimapIndicator: minimapIndicator,

@@ -73,7 +73,7 @@ function highlightNodesInRect(rectX, rectY, rectW, rectH) {
     if (!node) return;
 
     const rect = { x: rectX, y: rectY, width: rectW, height: rectH };
-    const isInside = TopologyCanvas.nodeInRect(node, rect, window.innerWidth, window.innerHeight);
+    const isInside = TopologyCanvas.nodeInRect(node, rect);
 
     if (isInside) {
       el.classList.add('selected');
@@ -85,12 +85,7 @@ function highlightNodesInRect(rectX, rectY, rectW, rectH) {
 
 function selectNodesInRect(rectX, rectY, rectW, rectH) {
   const rect = { x: rectX, y: rectY, width: rectW, height: rectH };
-  TopologyCanvas.nodesInRect(
-    state.config.nodes,
-    rect,
-    window.innerWidth,
-    window.innerHeight
-  ).forEach((id) => state.selectedNodes.add(id));
+  TopologyCanvas.nodesInRect(state.config.nodes, rect).forEach((id) => state.selectedNodes.add(id));
 
   updateSelectionVisuals();
 

@@ -8,7 +8,8 @@ import { bindModalControls, openModal, toastError, toastInfo, toastSuccess } fro
 import { discardPendingImport, exportConfig, importTopologyInteractive, saveConfig } from './io.js';
 import { initSearchUi } from './search-ui.js';
 import { deselectConnection, drawLines } from './canvas-links.js';
-import { drawGridSystem, renderTree, setNodeEventHandlers } from './canvas-render.js';
+import { renderTree, setNodeEventHandlers } from './canvas-render.js';
+import { updateTransform } from './viewport.js';
 import { closeMinimap, initMinimap, toggleMinimap, updateMinimap } from './minimap.js';
 import { refreshHostList } from './host-list.js';
 import { clearSelection } from './selection.js';
@@ -32,6 +33,7 @@ import { bindSshControls, setupSSHListeners } from './ssh.js';
 import { bindNodeForm, openNodeModal } from './node-form.js';
 import { bindContextMenu, hideContextMenu, showNodeContextMenu } from './context-menu.js';
 import { bindDiscoveryControls, openDiscoveryModal } from './discovery-ui.js';
+import { bindProxmoxControls, openProxmoxModal } from './proxmox-ui.js';
 import { initTheme, toggleTheme } from './theme.js';
 import { initLatencyUi } from './latency-ui.js';
 
@@ -53,7 +55,12 @@ setNodeEventHandlers({
 
 async function init() {
   lucide.createIcons();
-  drawGridSystem();
+  // The world origin starts in the middle of the window, so a node at (0, 0)
+  // and a fresh document sit in view.
+  const viewport = document.getElementById('viewport').getBoundingClientRect();
+  state.pointX = viewport.width / 2;
+  state.pointY = viewport.height / 2;
+  updateTransform();
   setupEventListeners();
   await loadConfig();
   setupMonitoringListener();
@@ -260,6 +267,7 @@ function setupEventListeners() {
   });
 
   document.getElementById('btn-discover').addEventListener('click', openDiscoveryModal);
+  document.getElementById('btn-proxmox').addEventListener('click', openProxmoxModal);
   document.getElementById('btn-snap').addEventListener('click', toggleSnapToGrid);
 
   document.getElementById('btn-import').addEventListener('click', async () => {
@@ -288,6 +296,7 @@ function setupEventListeners() {
   bindModalControls();
   bindSshControls();
   bindDiscoveryControls();
+  bindProxmoxControls();
   bindNodeForm();
   bindContextMenu();
   bindFlowControls();

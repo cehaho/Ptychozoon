@@ -7,8 +7,6 @@ const path = require('path');
 const Canvas = require('../renderer/js/canvas.js');
 const Probe = require('../renderer/js/probe.js');
 
-const COLS = 'ABCDEFGHIJKLMNOPQRST'.split('');
-
 // Records every 2D context call and property write, in order.
 function recordingContext() {
   const calls = [];
@@ -34,34 +32,37 @@ function near(actual, expected, message) {
 
 // ---- Grid ----
 
-test('snap puts a position on the centre of its 5% cell', () => {
-  assert.deepEqual(Canvas.snapToGrid(11, 23, true), { x: 12.5, y: 22.5 });
-  assert.deepEqual(Canvas.snapToGrid(14.9, 25.1, true), { x: 12.5, y: 27.5 });
+test('snap puts a position on the centre of its cell', () => {
+  assert.deepEqual(Canvas.snapToGrid(11, 23, true), { x: 20, y: 20 });
+  assert.deepEqual(Canvas.snapToGrid(41, 55, true), { x: 60, y: 60 });
 });
 
-test('snap clamps to the first and last cells', () => {
-  assert.deepEqual(Canvas.snapToGrid(-20, -20, true), { x: 2.5, y: 2.5 });
-  assert.deepEqual(Canvas.snapToGrid(140, 400, true), { x: 97.5, y: 247.5 });
+test('snap has no outer edge: a far or negative position stays', () => {
+  assert.deepEqual(Canvas.snapToGrid(-20, -20, true), { x: -20, y: -20 });
+  assert.deepEqual(Canvas.snapToGrid(12400, 9800, true), { x: 12420, y: 9820 });
 });
 
 test('snap off leaves the position alone', () => {
   assert.deepEqual(Canvas.snapToGrid(11.3, 300, false), { x: 11.3, y: 300 });
 });
 
-test('grid cell names column letter and row number, ? off the grid', () => {
-  assert.deepEqual(Canvas.gridCell(2.5, 2.5, COLS), { col: 'A', row: 1 });
-  assert.deepEqual(Canvas.gridCell(97.5, 247.5, COLS), { col: 'T', row: 50 });
-  assert.deepEqual(
-    Canvas.gridCell(5, 5, COLS),
-    { col: 'A', row: 1 },
-    'a boundary belongs to the cell before'
-  );
-  assert.deepEqual(Canvas.gridCell(0, 260, COLS), { col: '?', row: '?' });
+test('grid cell names a column and a row, without an outer edge', () => {
+  assert.deepEqual(Canvas.gridCell(20, 20), { col: 'A', row: 1 });
+  assert.deepEqual(Canvas.gridCell(59, 79), { col: 'B', row: 2 });
+  assert.deepEqual(Canvas.gridCell(0, 0), { col: 'A', row: 1 }, 'a boundary opens its cell');
+  assert.deepEqual(Canvas.gridCell(-1, -1), { col: '-A', row: 0 }, 'left of and above the origin');
+  assert.equal(Canvas.columnLabel(26), 'AA');
+  assert.equal(Canvas.columnLabel(701), 'ZZ');
 });
 
-test('a dragged node is held inside the grid area', () => {
-  assert.deepEqual(Canvas.clampNodePosition(-5, 999), { x: 1, y: 250 });
-  assert.deepEqual(Canvas.clampNodePosition(40, 60), { x: 40, y: 60 });
+test('nodes in a rectangle are found by their world position', () => {
+  const nodes = [{ id: 'a', x: 0, y: 0 }, { id: 'b', x: 500, y: 500 }, { id: 'c' }];
+  assert.deepEqual(Canvas.nodesInRect(nodes, { x: -50, y: -50, width: 100, height: 100 }), ['a']);
+  assert.deepEqual(
+    Canvas.nodesInRect(nodes, { x: 0, y: 0, width: 1000, height: 1000 }),
+    ['a', 'b'],
+    'a node without a position is never selected'
+  );
 });
 
 // ---- Zoom and pan ----
@@ -110,14 +111,13 @@ test('a selection rectangle is the same whichever way it was dragged', () => {
 
 test('rectangle selection picks the nodes whose centre is inside, edges included', () => {
   const nodes = [
-    { id: 'in', x: 25, y: 25 },
-    { id: 'edge', x: 50, y: 50 },
-    { id: 'out', x: 75, y: 25 }
+    { id: 'in', x: 250, y: 200 },
+    { id: 'edge', x: 500, y: 400 },
+    { id: 'out', x: 750, y: 200 }
   ];
-  // World 1000 x 800: centres at (250,200), (500,400), (750,200).
   const rect = { x: 200, y: 150, width: 300, height: 250 };
-  assert.deepEqual(Canvas.nodesInRect(nodes, rect, 1000, 800), ['in', 'edge']);
-  assert.deepEqual(Canvas.nodesInRect(nodes, { x: 0, y: 0, width: 0, height: 0 }, 1000, 800), []);
+  assert.deepEqual(Canvas.nodesInRect(nodes, rect), ['in', 'edge']);
+  assert.deepEqual(Canvas.nodesInRect(nodes, { x: 0, y: 0, width: 0, height: 0 }), []);
 });
 
 // ---- Ports and link paths ----
@@ -220,18 +220,18 @@ test('auto-layout puts each hop one row lower and centres each row', () => {
   ];
   const layout = Canvas.autoLayout(nodes, links);
   assert.equal(layout.levelCount, 3);
-  assert.deepEqual(layout.positions.get('gw'), { x: 50, y: 10 });
-  assert.deepEqual(layout.positions.get('sw'), { x: 50, y: 25 });
-  assert.deepEqual(layout.positions.get('nas'), { x: 44, y: 40 });
-  assert.deepEqual(layout.positions.get('pc'), { x: 56, y: 40 });
+  assert.deepEqual(layout.positions.get('gw'), { x: 0, y: -180 });
+  assert.deepEqual(layout.positions.get('sw'), { x: 0, y: 0 });
+  assert.deepEqual(layout.positions.get('nas'), { x: -100, y: 180 });
+  assert.deepEqual(layout.positions.get('pc'), { x: 100, y: 180 });
 });
 
-test('auto-layout keeps unlinked nodes on the top row', () => {
+test('auto-layout keeps unlinked nodes on one row', () => {
   const nodes = [{ id: 'a' }, { id: 'b' }];
   const layout = Canvas.autoLayout(nodes, []);
   assert.equal(layout.levelCount, 1);
-  assert.deepEqual(layout.positions.get('a'), { x: 44, y: 10 });
-  assert.deepEqual(layout.positions.get('b'), { x: 56, y: 10 });
+  assert.deepEqual(layout.positions.get('a'), { x: -100, y: 0 });
+  assert.deepEqual(layout.positions.get('b'), { x: 100, y: 0 });
 });
 
 test('auto-layout on a loop starts from the best connected node', () => {
@@ -244,26 +244,25 @@ test('auto-layout on a loop starts from the best connected node', () => {
     { sourceNodeId: 'd', targetNodeId: 'b' }
   ];
   const layout = Canvas.autoLayout(nodes, links);
-  assert.equal(layout.positions.get('b').y, 10);
-  assert.equal(layout.positions.get('d').y, 25);
+  assert.equal(layout.positions.get('b').y, -90);
+  assert.equal(layout.positions.get('d').y, 90);
 });
 
-test('auto-layout clamps wide rows and deep trees to the 5-95 band', () => {
+test('auto-layout spreads wide rows and deep trees without an edge', () => {
   const nodes = Array.from({ length: 12 }, (_, i) => ({ id: 'n' + i }));
   const wide = Canvas.autoLayout(nodes, []);
   const xs = [...wide.positions.values()].map((p) => p.x);
-  assert.equal(Math.min(...xs), 5);
-  assert.equal(Math.max(...xs), 95);
+  assert.equal(Math.min(...xs), -1100);
+  assert.equal(Math.max(...xs), 1100);
 
-  const chain = nodes.slice(0, 1).concat(nodes.slice(1));
-  const links = chain.slice(1).map((n, i) => ({ sourceNodeId: chain[i].id, targetNodeId: n.id }));
-  const deep = Canvas.autoLayout(chain, links);
-  assert.equal(deep.positions.get('n11').y, 95);
+  const links = nodes.slice(1).map((n, i) => ({ sourceNodeId: nodes[i].id, targetNodeId: n.id }));
+  const deep = Canvas.autoLayout(nodes, links);
+  assert.equal(deep.positions.get('n11').y, 990);
 });
 
 test('auto-layout ignores links to unknown nodes', () => {
   const layout = Canvas.autoLayout([{ id: 'a' }], [{ sourceNodeId: 'ghost', targetNodeId: 'a' }]);
-  assert.deepEqual(layout.positions.get('a'), { x: 50, y: 10 });
+  assert.deepEqual(layout.positions.get('a'), { x: 0, y: 0 });
 });
 
 // ---- Minimap ----
@@ -282,6 +281,7 @@ test('minimap draws background, then links, then nodes on top', () => {
     width: 200,
     height: 150,
     dark: true,
+    bounds: { x: 0, y: 0, width: 100, height: 100 },
     nodes,
     links,
     lookFor: () => ({ color: '#e5674f', waiting: false }),
@@ -295,10 +295,10 @@ test('minimap draws background, then links, then nodes on top', () => {
   assert.equal(names.filter((n) => n === 'arc').length, 2);
   assert.ok(names.lastIndexOf('stroke') < names.indexOf('arc'), 'links before nodes');
 
-  // World is 300% of the viewport: x 30% -> 30/100 * 200/3 = 20.
+  // Bounds 100 x 100 on a 200 x 150 minimap: x 30 -> 60, y 15 -> 22.5.
   const moveTo = ctx.calls.find((c) => c[0] === 'moveTo');
-  near(moveTo[1], 20);
-  near(moveTo[2], 7.5);
+  near(moveTo[1], 60);
+  near(moveTo[2], 22.5);
   const fills = ctx.calls.filter((c) => c[0] === 'set fillStyle').map((c) => c[1]);
   assert.deepEqual(fills.slice(1), ['#5fb85a', '#e5674f']);
   assert.equal(ctx.globalAlpha, 1, 'alpha restored after each link');
@@ -310,6 +310,7 @@ test('minimap dims a waiting failover and uses the light background', () => {
     width: 200,
     height: 150,
     dark: false,
+    bounds: { x: 0, y: 0, width: 100, height: 100 },
     nodes: [
       { id: 'a', x: 0, y: 0 },
       { id: 'b', x: 10, y: 10 }
@@ -331,13 +332,13 @@ test('minimap node colour: selection wins, then status', () => {
 });
 
 test('minimap viewport box tracks pan and zoom and is clipped', () => {
-  // World 3000 x 1800 on a 200 x 150 minimap.
+  // Bounds 3000 x 1800 on a 200 x 150 minimap.
+  const bounds = { x: 0, y: 0, width: 3000, height: 1800 };
   const atOrigin = Canvas.minimapIndicator(
     { scale: 1, pointX: 0, pointY: 0 },
     1000,
     600,
-    3000,
-    1800,
+    bounds,
     200,
     150
   );
@@ -349,8 +350,7 @@ test('minimap viewport box tracks pan and zoom and is clipped', () => {
     { scale: 2, pointX: -1000, pointY: -600 },
     1000,
     600,
-    3000,
-    1800,
+    bounds,
     200,
     150
   );
@@ -362,16 +362,26 @@ test('minimap viewport box tracks pan and zoom and is clipped', () => {
     { scale: 1, pointX: 300, pointY: 0 },
     1000,
     600,
-    3000,
-    1800,
+    bounds,
     200,
     150
   );
   assert.equal(pastLeft.left, 0, 'never left of the minimap');
 });
 
+test('the minimap covers the nodes as well as the visible viewport', () => {
+  const bounds = Canvas.contentBounds(
+    { scale: 1, pointX: 0, pointY: 0 },
+    1000,
+    600,
+    [{ x: 5000, y: 3000 }],
+    100
+  );
+  assert.deepEqual(bounds, { x: -100, y: -100, width: 5200, height: 3200 });
+});
+
 test('a minimap click maps back to the world and recentres there', () => {
-  const world = Canvas.minimapToWorld(100, 75, 200, 150, 3000, 1800);
+  const world = Canvas.minimapToWorld(100, 75, { x: 0, y: 0, width: 3000, height: 1800 }, 200, 150);
   assert.deepEqual(world, { x: 1500, y: 900 });
   const view = { scale: 1.5, ...Canvas.centerOn(world.x, world.y, 1000, 600, 1.5) };
   assert.deepEqual(Canvas.screenToWorld(view, 500, 300), world);

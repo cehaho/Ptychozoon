@@ -26,6 +26,8 @@
     "allow-network-arp",
     "allow-network-neighbors",
     "allow-network-enrich",
+    "allow-network-identify",
+    "allow-proxmox-discover",
     "allow-monitor-start",
     "allow-monitor-stop",
     "allow-alerts-notify",

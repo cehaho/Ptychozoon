@@ -221,17 +221,13 @@ export function startNodeDrag(e, node) {
   const viewportEl = document.getElementById('viewport');
   const viewportRect = viewportEl.getBoundingClientRect();
 
-  // Use vw/vh based dimensions for consistency with grid labels
-  const worldWidth = window.innerWidth;
-  const worldHeight = window.innerHeight;
-
   // Calculate mouse position relative to viewport, accounting for zoom/pan
   const mouseWorldX = (e.clientX - viewportRect.left - state.pointX) / state.scale;
   const mouseWorldY = (e.clientY - viewportRect.top - state.pointY) / state.scale;
 
-  // Store the offset between mouse and node center (using vh/vw units)
-  const nodeX = ((node.x || 50) / 100) * worldWidth;
-  const nodeY = ((node.y || 50) / 100) * worldHeight;
+  // Store the offset between mouse and node centre, in world pixels
+  const nodeX = Number.isFinite(Number(node.x)) ? Number(node.x) : 0;
+  const nodeY = Number.isFinite(Number(node.y)) ? Number(node.y) : 0;
 
   dragOffsetX = mouseWorldX - nodeX;
   dragOffsetY = mouseWorldY - nodeY;
@@ -242,8 +238,8 @@ export function startNodeDrag(e, node) {
     state.selectedNodes.forEach((nodeId) => {
       const selectedNode = state.config.nodes.find((n) => n.id === nodeId);
       if (selectedNode) {
-        const snX = ((selectedNode.x || 50) / 100) * worldWidth;
-        const snY = ((selectedNode.y || 50) / 100) * worldHeight;
+        const snX = Number.isFinite(Number(selectedNode.x)) ? Number(selectedNode.x) : 0;
+        const snY = Number.isFinite(Number(selectedNode.y)) ? Number(selectedNode.y) : 0;
         multiDragOffsets.set(nodeId, {
           offsetX: mouseWorldX - snX,
           offsetY: mouseWorldY - snY
@@ -266,35 +262,23 @@ export function handleNodeDrag(e) {
   const viewportEl = document.getElementById('viewport');
   const viewportRect = viewportEl.getBoundingClientRect();
 
-  // Use vw/vh based dimensions for consistency with grid labels
-  const worldWidth = window.innerWidth;
-  const worldHeight = window.innerHeight;
-
   // Calculate mouse position in world coordinates (accounting for zoom/pan)
   const mouseWorldX = (e.clientX - viewportRect.left - state.pointX) / state.scale;
   const mouseWorldY = (e.clientY - viewportRect.top - state.pointY) / state.scale;
 
-  // Multi-select drag
+  // Multi-select drag. The canvas has no edge: any world position is valid.
   if (multiDragOffsets.size > 0) {
     multiDragOffsets.forEach((offsets, nodeId) => {
       const node = state.config.nodes.find((n) => n.id === nodeId);
       if (!node) return;
 
-      let newX = ((mouseWorldX - offsets.offsetX) / worldWidth) * 100;
-      let newY = ((mouseWorldY - offsets.offsetY) / worldHeight) * 100;
-
-      // Clamp values
-      newX = Math.max(1, Math.min(99, newX));
-      newY = Math.max(1, Math.min(250, newY));
-
-      // Apply snap-to-grid if enabled
-      const snapped = snapToGrid(newX, newY);
+      const snapped = snapToGrid(mouseWorldX - offsets.offsetX, mouseWorldY - offsets.offsetY);
 
       // Update visual position
       const el = document.getElementById(`node-${nodeId}`);
       if (el) {
-        el.style.left = snapped.x + '%';
-        el.style.top = snapped.y + '%';
+        el.style.left = snapped.x + 'px';
+        el.style.top = snapped.y + 'px';
       }
 
       // Store temporary position
@@ -303,20 +287,12 @@ export function handleNodeDrag(e) {
     });
   } else {
     // Single node drag
-    let newX = ((mouseWorldX - dragOffsetX) / worldWidth) * 100;
-    let newY = ((mouseWorldY - dragOffsetY) / worldHeight) * 100;
-
-    // Clamp values to keep node within bounds (allow full grid range)
-    newX = Math.max(1, Math.min(99, newX));
-    newY = Math.max(1, Math.min(250, newY)); // Grid extends to 250vh (50 rows * 5vh)
-
-    // Apply snap-to-grid if enabled
-    const snapped = snapToGrid(newX, newY);
+    const snapped = snapToGrid(mouseWorldX - dragOffsetX, mouseWorldY - dragOffsetY);
 
     // Update visual position immediately
     const el = document.getElementById(`node-${dragNode.id}`);
-    el.style.left = snapped.x + '%';
-    el.style.top = snapped.y + '%';
+    el.style.left = snapped.x + 'px';
+    el.style.top = snapped.y + 'px';
 
     // Store temporary position
     dragNode._tempX = snapped.x;

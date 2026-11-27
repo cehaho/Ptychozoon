@@ -14,7 +14,7 @@ import {
   toastWarning
 } from './ui.js';
 import { saveConfig } from './io.js';
-import { viewportCenterPercent } from './viewport.js';
+import { viewportCenter } from './viewport.js';
 import { renderTree } from './canvas-render.js';
 import { refreshHostList } from './host-list.js';
 import { startMonitoring, stopMonitoring } from './monitoring.js';
@@ -184,7 +184,10 @@ async function startNetworkScan() {
 
   // Filter out already configured hosts
   discoveredHosts = Discovery.newHosts(discoveredHosts, state.config.nodes).map((host) =>
-    Object.assign({ hostname: null, vendor: null, name: '', nameEdited: false }, host)
+    Object.assign(
+      { hostname: null, vendor: null, device: null, deviceKind: null, name: '', nameEdited: false },
+      host
+    )
   );
 
   document.getElementById('discovery-text').textContent =
@@ -200,7 +203,39 @@ async function startNetworkScan() {
   document.getElementById('btn-start-scan').classList.remove('hidden');
   document.getElementById('btn-start-scan').textContent = 'Scan Again';
 
-  enrichDiscoveredHosts();
+  await enrichDiscoveredHosts();
+  identifyDiscoveredDevices();
+}
+
+// UniFi and Proxmox devices name themselves on a web port; the scan alone
+// only knows their MAC vendor. Runs after the DNS and vendor enrichment.
+async function identifyDiscoveredDevices() {
+  const api = window.desktopAPI && window.desktopAPI.network;
+  if (!api || !api.identify) return;
+  const generation = discoveryGeneration;
+  const candidates = discoveredHosts
+    .filter((host) => Discovery.identifyCandidate(host))
+    .slice(0, 32);
+  if (candidates.length === 0) return;
+  const apply = (ip, info) => {
+    if (generation !== discoveryGeneration || !info) return;
+    const idx = discoveredHosts.findIndex((host) => host.ip === ip);
+    if (idx === -1) return;
+    discoveredHosts[idx].device = info.label || null;
+    discoveredHosts[idx].deviceKind = info.device || null;
+    updateDiscoveryRow(idx);
+  };
+  const stop = api.onIdentifyResult
+    ? api.onIdentifyResult((result) => result && apply(result.ip, result))
+    : () => {};
+  try {
+    const results = await api.identify(candidates.map((host) => ({ ip: host.ip })));
+    Object.keys(results || {}).forEach((ip) => apply(ip, results[ip]));
+  } catch (error) {
+    console.warn('Device identification failed', error);
+  } finally {
+    stop();
+  }
 }
 
 // Reverse DNS names and MAC vendors arrive after the scan, row by row.
@@ -241,7 +276,7 @@ function renderDiscoveryResults() {
   const table = document.createElement('table');
   table.className = 'discovery-table';
   table.innerHTML =
-    '<thead><tr><th></th><th>Address</th><th>Hostname</th><th>Vendor</th><th>MAC</th><th>Node name</th></tr></thead>';
+    '<thead><tr><th></th><th>Address</th><th>Hostname</th><th>Vendor</th><th>Device</th><th>MAC</th><th>Node name</th></tr></thead>';
   const body = document.createElement('tbody');
   discoveredHosts.forEach((host, idx) => {
     const row = document.createElement('tr');
@@ -251,6 +286,7 @@ function renderDiscoveryResults() {
       <td class="font-mono">${escapeHtml(host.ip)}${host.ipv6 ? ' <span class="text-slate-500">IPv6</span>' : ''}</td>
       <td class="discovery-hostname text-slate-400"></td>
       <td class="discovery-vendor text-slate-400"></td>
+      <td class="discovery-device text-slate-400"></td>
       <td class="font-mono text-slate-500">${host.mac ? escapeHtml(host.mac) : ''}</td>
       <td><input type="text" class="form-input discovery-name" maxlength="64"></td>
     `;
@@ -275,6 +311,7 @@ function updateDiscoveryRow(idx) {
   if (!host || !row) return;
   row.querySelector('.discovery-hostname').textContent = host.hostname || '';
   row.querySelector('.discovery-vendor').textContent = host.vendor || '';
+  row.querySelector('.discovery-device').textContent = host.device || '';
   if (!host.nameEdited) {
     host.name = Discovery.suggestName(host);
     row.querySelector('.discovery-name').value = host.name;
@@ -283,7 +320,7 @@ function updateDiscoveryRow(idx) {
 
 async function addDiscoveredNodes() {
   const selected = discoveredHosts.filter((h) => h.selected);
-  const fields = Discovery.nodesForHosts(selected, state.config.nodes, viewportCenterPercent());
+  const fields = Discovery.nodesForHosts(selected, state.config.nodes, viewportCenter());
   const stamp = Date.now();
 
   fields.forEach((field, idx) => {

@@ -19,6 +19,8 @@ fn main() {
         "network_arp",
         "network_neighbors",
         "network_enrich",
+        "network_identify",
+        "proxmox_discover",
         "monitor_start",
         "monitor_stop",
         "alerts_notify",

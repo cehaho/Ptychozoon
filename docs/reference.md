@@ -20,10 +20,11 @@ Les noms exacts dépendent de la distribution. Sans WebKitGTK, `npm start` écho
 
 ## Ce que fait la fenêtre
 
-- Déplacer les nœuds, panoramiquer le fond, zoomer à la molette.
+- Déplacer les nœuds, panoramiquer le fond, zoomer à la molette. Le fond n’a pas de bord : les positions (`x`, `y`) sont des pixels du monde, absolus, et rien ne borne le panoramique ni le placement. La grille de 40 px (`renderer/js/app/grid.js`) est un motif répété depuis l’origine, avec les lettres de colonne et les numéros de ligne des cases visibles ; un nœud affiche sa case (`C7`).
 - **Recherche** (`Ctrl+F` / `Cmd+F`) : le champ de la barre d’outils filtre les nœuds par nom, adresse (IPv4 ou IPv6, partielle), type, zone ou statut, sans tenir compte de la casse. Filtres : `status:down` (`up`, `down`, `unknown`), `vlan:10` (exact), `zone:dmz`, `type:server` (icône ou type de conteneur), `ip:10.0.`, `name:"core switch"` ; plusieurs valeurs séparées par des virgules (`status:down,unknown`), `-` pour exclure (`-type:docker`), les termes se cumulent. Les nœuds trouvés sont surlignés, les autres estompés, ainsi que les liens entre deux nœuds estompés. `Entrée` / flèches passent d’un résultat à l’autre et centrent la vue (compteur `n / m`) ; `Échap` efface la recherche. La logique est dans `renderer/js/search.js`.
 - **Admin** édite le **même document** de topologie que le canevas, dans la même fenêtre. Une sauvegarde conserve les liens, ports, conteneurs et zones VLAN.
 - **Découvrir** envoie un ping sur une plage IPv4 et lit la table ARP locale. La plage est remplie d’après l’interface choisie : `192.168.1` et `1`–`254` pour un /24, ou une plage sur le troisième octet (`10.0.16-31`) pour un réseau plus large, jusqu’à 16 blocs de 256 adresses (un /20). Un réseau plus large encore est limité au /20 qui contient l’adresse de l’interface. Les adresses `.0` et `.255` de chaque bloc ne sont pas sondées. Les voisins IPv6 sont ensuite lus dans la table des voisins du système (voir [IPv6](#ipv6)) et proposés, décochés, dans la liste. Après le balayage, chaque hôte est enrichi sans ralentir le scan (`network_enrich`) : nom DNS inverse (PTR) via le résolveur du système (16 requêtes en parallèle au plus, 1,5 s maximum chacune) et fabricant déduit de l’adresse MAC (OUI). Une MAC administrée localement (bit `0x02` du premier octet, adresses Wi-Fi aléatoires) est affichée `Private/random`. La liste propose un nom de nœud (nom PTR court, sinon fabricant + dernier octet), modifiable, et une icône devinée du nom ou du fabricant. **Add Selected to Canvas** crée les nœuds (nom, adresse, `mac`, icône) en ignorant les adresses déjà présentes, les place en grille autour du centre de la vue, puis enregistre le document. La table OUI (`src-tauri/data/oui.txt`, ~550 Ko) est construite à partir du registre public IEEE MA-L (`https://standards-oui.ieee.org/oui/oui.csv`) ; on la régénère avec `node scripts/build-oui.js oui.csv`. Quand l’IEEE attribue un ancien préfixe à plusieurs organisations, la première listée est gardée.
+  - **Empreinte** (colonne **Device**) : pour 32 hôtes au plus dont le fabricant est Ubiquiti ou Proxmox (ou dont le nom évoque un de leurs produits), `network_identify` essaie HTTPS 443 et 8443, puis HTTP 8080 et 80, lit l’en-tête `Server` et les 32 premiers Kio de la page, et nomme l’appareil quand la page annonce UniFi OS, UniFi Network, UniFi Protect, UniFi Talk, AirOS ou EdgeOS. Le certificat n’est pas vérifié (ces équipements sont en autosigné), les redirections ne sont pas suivies, et une page ordinaire n’est jamais étiquetée. Le résultat remplit la colonne **Device** et sert à proposer le nom (`UniFi OS 42`) et l’icône. Le code est dans `src-tauri/src/identify.rs`.
 - **Supervision** : chaque nœud est sondé (ping ICMP, ou connexion TCP si un port est défini). L’intervalle par défaut est de 5 s (`settings.probeIntervalMs`). L’état reste `unknown` jusqu’à deux résultats concordants (`settings.confirmations`) ; un seul échec ne bascule pas le nœud. Au plus une vingtaine de sondes tournent en parallèle. L’historique court est écrit à part dans `status.json`.
   - **Sondes enrichies** (facultatif, champ `probe` du nœud, éditable dans Admin sous « Checks ») : quand `probe` est présent, il remplace le ping / port par défaut ; le nœud est `up` seulement si **toutes** les vérifications passent. Un nœud sans `probe` garde exactement le comportement précédent. Format :
     ```json
@@ -86,6 +87,16 @@ Lecture seule, SNMP v2c, activée nœud par nœud (formulaire du nœud ou tablea
 - **Affichage** : l’infobulle du nœud montre nom, description, uptime, interfaces actives et les plus chargées. Un lien est coloré et épaissi selon sa charge (vert < 30 %, jaune < 60 %, orange < 85 %, rouge au-delà, par rapport à la vitesse de l’interface) si son interface est connue : `snmpIfIndex` ou `snmpIfName` sur le lien (avec `snmpNodeId` pour l’extrémité concernée ; double-clic sur un lien pour le saisir), ou, à défaut, un nom de port du nœud égal au `ifName` ou `ifDescr`.
 - **Limites** : pas de SNMPv1 ni v3, pas d’écriture. Une community fausse ne produit qu’une absence de réponse (« No SNMP response »). Le client n’a été testé que sur des trames encodées/décodées, pas contre un vrai agent.
 
+## Invités Proxmox
+
+Le bouton **Proxmox** (barre d’outils, ou depuis la fenêtre de découverte) lit les VM et conteneurs d’un hôte par l’API `https://<hôte>:8006/api2/json` : `GET /version`, `GET /nodes`, puis `/nodes/<nœud>/qemu` et `/nodes/<nœud>/lxc`.
+
+- **Jeton** : créé dans Datacenter → Permissions → API Tokens ; l’identifiant ressemble à `user@realm!nom`, le secret n’est affiché qu’une fois. Le jeton n’est **pas enregistré** : il ne sert qu’à ces requêtes, n’est écrit ni dans le fichier de topologie ni dans le trousseau, et aucun message d’erreur ne le répète.
+- **TLS** : le certificat autosigné est accepté par défaut (case décochable). Sans cette case, un certificat refusé donne un message explicite.
+- **Port** : 8006 par défaut ; le champ accepte `pve.lan`, `10.0.0.5`, `10.0.0.5:8006`, `https://pve.lan:8006/` et une adresse IPv6.
+- **Ajout** : les invités cochés (les invités en marche le sont d’office) deviennent des nœuds sous un conteneur `proxmox` nommé d’après l’hôte, créé au premier import. L’API ne donne pas l’adresse des invités : elle se saisit ensuite dans le formulaire du nœud, et d’ici là le nœud n’est pas supervisé.
+- **Limites** : pas de lecture des pools, des étiquettes, du disque ni de l’agent invité ; 8 nœuds et 512 invités au plus ; un nœud hors ligne laisse ses deux listes vides ; pas de vérification du certificat, donc ne pas se fier au nom de l’hôte pour l’authentification.
+
 ## Flux de backup
 
 Un flux va de la machine sauvegardée à celle qui garde la copie (bouton **Backups** de la barre d’outils, ou clic droit sur un nœud → **New Backup Flow From Here**). Ce n’est pas un câble : il ne compte ni dans la logique parent / secours ni dans l’état « injoignable ». Il est dessiné en pointillés fléchés, avec sa légende (nom, âge du dernier backup) au-dessus des nœuds ; l’export image le reprend tel quel, à la couleur de son état ; la case **Show flows on the canvas** de la liste le masque (`settings.showFlows`), y compris dans l’export.
@@ -103,7 +114,7 @@ Un flux va de la machine sauvegardée à celle qui garde la copie (bouton **Back
 
 ```
 Ptychozoon/
-├── src-tauri/              # Commandes Tauri : config, SSH, ping, scan, sondes, secrets
+├── src-tauri/              # Commandes Tauri : config, SSH, ping, scan, empreinte, invités Proxmox, sondes, secrets
 ├── tailwind.css            # Entrée Tailwind : @import, @theme (couleurs, rayons, polices, tailles) et @source ./renderer
 ├── lib/hosts.js            # Réexporte renderer/js/hosts.js pour les tests Node
 ├── renderer/
@@ -120,7 +131,7 @@ Ptychozoon/
 │       ├── hosts.js        # Contrôles hôte (IPv4, IPv6, nom) / port / plage, miroir de hosts.rs
 │       ├── probe.js        # Confirmation d’état et lien actif
 │       ├── alerts.js       # Alertes de changement d’état (anti-rebond, délai, synthèse)
-│       ├── canvas.js       # Géométrie du canevas (grille, zoom, liens, mini-carte)
+│       ├── canvas.js       # Géométrie du canevas sans bord (grille, zoom, liens, mini-carte)
 │       ├── search.js       # Analyse des requêtes de recherche et correspondance des nœuds
 │       ├── export.js       # Export image : SVG autonome, PNG, boîte d’options
 │       ├── discovery.js    # Découverte : noms et icônes suggérés, dédoublonnage, placement
@@ -138,7 +149,8 @@ Ptychozoon/
 │           ├── util.js, ui.js, io.js, theme.js
 │           │               # Utilitaires, toasts et modales, enregistrement / import / export, thème
 │           ├── viewport.js, canvas-render.js, canvas-links.js, canvas-edit.js, canvas-view.js
-│           │               # Canevas : vue, rendu des nœuds, liens, glisser / relier, grille et mise en page
+│           │               # Canevas : vue, rendu des nœuds, liens, glisser / relier, mise en page
+│           ├── grid.js         # Grille infinie : motif répété depuis l’origine et libellés des cases visibles
 │           ├── selection.js, undo.js, minimap.js, host-list.js
 │           │               # Sélection rectangulaire, annuler / rétablir, mini-carte, liste des hôtes
 │           ├── monitoring.js, latency-ui.js, alert-notifier.js
@@ -148,6 +160,7 @@ Ptychozoon/
 │           ├── context-menu.js  # Menu clic droit
 │           ├── flows-ui.js      # Flux de backup : liste, éditeur, flèches, vérification périodique
 │           ├── ssh.js           # Terminal SSH
+│           ├── proxmox-ui.js    # Invités Proxmox : jeton, liste, ajout au canevas
 │           └── discovery-ui.js  # Fenêtre de découverte
 ├── scripts/
 │   ├── copy-vendor.js      # Copie xterm et Lucide, compile Tailwind dans renderer/vendor
@@ -208,7 +221,7 @@ Le canevas et le tableau Admin lisent et écrivent **un seul** document :
 }
 ```
 
-`address` est une IPv4, une IPv6 ou un nom d’hôte. Un `port` numérique fait utiliser le TCP au lieu du ping. Les positions sont des pourcentages. Un câble est un `link` (`primary` ou `failover`) entre deux ports de nœuds. Les anciens `primaryParentId` / `secondaryParentId`, et l’ancien tableau `connections`, deviennent des `links` au premier chargement. Conteneurs et zones VLAN restent sur leurs nœuds. Les réglages SSH d’un nœud sont le port, l’utilisateur, le mode d’auth (`password` ou `key`), et le chemin de clé optionnel. Un secret enregistré n’apparaît que comme `sshSecret: { "type": "password" }` ou `"passphrase"`. Le secret lui-même n’est pas dans ce document.
+`address` est une IPv4, une IPv6 ou un nom d’hôte. Un `port` numérique fait utiliser le TCP au lieu du ping. Les positions `x` et `y` sont des pixels du monde (entiers ou décimaux, négatifs compris), sans borne. Un câble est un `link` (`primary` ou `failover`) entre deux ports de nœuds. Les anciens `primaryParentId` / `secondaryParentId`, et l’ancien tableau `connections`, deviennent des `links` au premier chargement. Conteneurs et zones VLAN restent sur leurs nœuds. Les réglages SSH d’un nœud sont le port, l’utilisateur, le mode d’auth (`password` ou `key`), et le chemin de clé optionnel. Un secret enregistré n’apparaît que comme `sshSecret: { "type": "password" }` ou `"passphrase"`. Le secret lui-même n’est pas dans ce document.
 
 Une sauvegarde est refusée si le JSON n’a pas de tableau `nodes` ni de `schemaVersion` supporté. Le nouveau fichier est écrit dans un temporaire du même dossier, puis renommé. Le fichier précédent est conservé en `config.json.bak`. L’import affiche le nombre de nœuds, de liens et la version, et demande confirmation avant de remplacer le document ouvert.
 
@@ -229,7 +242,7 @@ Couvre la validation des hôtes, le document de topologie, la confirmation de so
 
 Les règles écrites deux fois, en JS et en Rust, sont vérifiées sur les mêmes cas : `test/fixtures/probe-checks.json` (sondes), `test/fixtures/hosts.json` (hôtes, ports, plage de scan, commande `ping`) et `test/fixtures/topology.json` (lecture et migration du document, messages d’erreur). Chaque fichier est lu par un test `node --test` et par un test `cargo test` (`shared_fixtures`). Après un changement dans l’une des deux implémentations, ajouter le cas au fichier commun.
 
-`test/canvas.test.js` couvre la géométrie du canevas, isolée dans `renderer/js/canvas.js` : magnétisme de la grille, zoom autour du curseur et pan, sélection rectangulaire, position des ports, tracé des liens (courbes de Bézier, étiquettes, style selon la sonde), mise en page automatique, et dessin de la mini-carte sur un contexte 2D factice qui enregistre les appels.
+`test/canvas.test.js` couvre la géométrie du canevas, isolée dans `renderer/js/canvas.js` : magnétisme de la grille et positions négatives ou lointaines, zoom autour du curseur et pan, sélection rectangulaire, position des ports, tracé des liens (courbes de Bézier, étiquettes, style selon la sonde), mise en page automatique, bornes de la mini-carte et dessin sur un contexte 2D factice qui enregistre les appels.
 
 `test/renderer-modules.test.js` vérifie la structure du renderer : pas de gestionnaire ni de script en ligne, CSP `script-src 'self'`, ordre de chargement des scripts, `admin.html` autonome, imports des modules résolus, et chargement de tous les modules sous Node.
 

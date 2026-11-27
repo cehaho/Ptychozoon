@@ -1,6 +1,7 @@
 // The zoom/pan transform of the canvas world and helpers that move it.
 
 import { state } from './state.js';
+import { updateGrid } from './grid.js';
 
 export function getViewport() {
   return document.getElementById('viewport');
@@ -12,6 +13,7 @@ export function getWorld() {
 
 export function updateTransform() {
   getWorld().style.transform = `translate(${state.pointX}px, ${state.pointY}px) scale(${state.scale})`;
+  updateGrid();
 }
 
 export function focusOnNode(nodeId) {
@@ -65,10 +67,11 @@ export function focusOnNode(nodeId) {
   requestAnimationFrame(animate);
 }
 
-// The canvas point (percent units) at the centre of the visible viewport.
-export function viewportCenterPercent() {
+// The world point (canvas pixels) at the centre of the visible viewport.
+export function viewportCenter() {
   const rect = getViewport().getBoundingClientRect();
-  const worldX = (rect.width / 2 - state.pointX) / state.scale;
-  const worldY = (rect.height / 2 - state.pointY) / state.scale;
-  return { x: (worldX / window.innerWidth) * 100, y: (worldY / window.innerHeight) * 100 };
+  return {
+    x: (rect.width / 2 - state.pointX) / state.scale,
+    y: (rect.height / 2 - state.pointY) / state.scale
+  };
 }

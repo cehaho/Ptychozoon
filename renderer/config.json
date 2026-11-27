@@ -18,8 +18,8 @@
       "port": null,
       "icon": "router",
       "iconType": "lucide",
-      "x": 50,
-      "y": 85,
+      "x": 0,
+      "y": 300,
       "ports": [
         {
           "id": "node_gateway_in",
@@ -40,8 +40,8 @@
       "port": null,
       "icon": "globe",
       "iconType": "lucide",
-      "x": 50,
-      "y": 15,
+      "x": 0,
+      "y": -300,
       "ports": [
         {
           "id": "node_internet_in",
@@ -62,8 +62,8 @@
       "port": null,
       "icon": "hard-drive",
       "iconType": "lucide",
-      "x": 30,
-      "y": 50,
+      "x": -400,
+      "y": 0,
       "ports": [
         {
           "id": "node_nas_in",
@@ -84,8 +84,8 @@
       "port": null,
       "icon": "monitor",
       "iconType": "lucide",
-      "x": 70,
-      "y": 50,
+      "x": 400,
+      "y": 0,
       "ports": [
         {
           "id": "node_pc_in",
