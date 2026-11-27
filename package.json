@@ -1,6 +1,6 @@
 {
   "name": "ptychozoon",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Interactive network topology viewer with SSH terminal, network discovery, and real-time monitoring",
   "scripts": {
     "start": "tauri dev",
